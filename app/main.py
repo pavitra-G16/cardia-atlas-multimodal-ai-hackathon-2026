@@ -121,17 +121,16 @@ def performance():
 @app.get('/api/example')
 def example():
     if ARTIFACT_ERROR: raise HTTPException(503,detail=ARTIFACT_ERROR)
-    # Explicitly a synthetic feature-wise median/mode demo, not one actual patient record.
+    # Synthetic feature-wise medians for continuous numeric inputs and modes for
+    # categorical or source-coded inputs. Never a real study-patient record.
     vals={}
     for f in SCHEMA['fields']:
         c=f['name']
-        if f['type'] in ('number','coded_select'):
-            v=f['median']
-            if f['type']=='coded_select':
-                choices=[float(x['value']) for x in f['options']];v=min(choices,key=lambda x:abs(x-v))
-            vals[c]=v
-        else: vals[c]=RAW[c].mode(dropna=True).iloc[0]
-    return {"label":"Synthetic demo values (feature-wise median/mode; not a study patient)","values":vals}
+        if f['type']=='number': vals[c]=float(f['median'])
+        else:
+            v=RAW[c].mode(dropna=True).iloc[0]
+            vals[c]=float(v) if f['type']=='coded_select' else str(v)
+    return {"label":"Synthetic demo values (continuous fields at feature-wise medians; categorical and source-coded fields at modes; not a study patient)","values":vals}
 
 @app.post('/api/predict')
 def predict(request:PredictRequest):

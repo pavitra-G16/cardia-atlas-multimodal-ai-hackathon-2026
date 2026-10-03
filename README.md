@@ -1,6 +1,6 @@
 # Cardia Atlas
 
-Cardia Atlas is an educational web prototype for Track A of the Multimodal AI Hackathon 2026. It estimates overall coronary artery disease (CAD) and LAD, LCX, and RCA stenosis probabilities from the UCI Extension of Z-Alizadeh Sani dataset. It combines a local prediction API, patient-specific SHAP explanations, and an original interactive 3D coronary schematic.
+Cardia Atlas is an educational web prototype for Track A of the Multimodal AI Hackathon 2026. It estimates overall coronary artery disease (CAD) and LAD, LCX, and RCA stenosis probabilities from the UCI Extension of Z-Alizadeh Sani dataset. It combines a local prediction API, patient-specific SHAP explanations, and an original anatomy-informed 3D heart illustration with schematic coronary paths.
 
 **Developed by Pavitra Gangwar.**
 
@@ -38,7 +38,7 @@ The UI expands documented clinical shorthand such as DM, HTN, CVA, and CHF using
 
 ## Results (actual experiment)
 
-Performance in the accompanying report comes from repeated outer-fold validation, reported as outer-fold mean ± standard deviation, with a fixed 0.50 threshold. Brier score and 5-bin expected calibration error/reliability bins were also computed on outer-fold probabilities as descriptive calibration checks; no recalibration was performed and the scores are not validated clinical risks. Targets are imbalanced, and results vary by fold. LAD performed better than LCX/RCA; no result establishes clinical utility. The model family chosen from the complete dataset is CAD Extra Trees, LAD Random Forest, LCX Random Forest, and RCA Logistic Regression (the artifact records the separate all-data 5-fold selection scores). Refer to `artifacts/evaluation.json` for full metrics, confusion matrices, fold-level values, and model selection evidence.
+Reported metrics are outer-fold mean ± SD from two repeats of stratified 5-fold CV. Each outer training partition independently selects among three model families with inner 3-fold ROC-AUC; preprocessing and fitting occur inside the relevant folds. These metrics estimate that nested model-selection procedure, not a particular full-data refit. Separately, the final model family is selected by 5-fold ROC-AUC on all 303 records and refit on all records; that final refit has no independent performance estimate. The threshold is fixed at 0.50. Brier and 5-bin ECE/reliability are descriptive only and do not validate clinical risk probabilities. Targets are imbalanced and results vary by fold. No result establishes clinical utility. Refer to `artifacts/evaluation.json` for fold-level values, confusion matrices, and model selection evidence.
 
 | Target | Accuracy | Precision | Recall | F1 | ROC-AUC |
 |---|---:|---:|---:|---:|---:|
@@ -49,9 +49,9 @@ Performance in the accompanying report comes from repeated outer-fold validation
 
 Values are outer-fold mean ± standard deviation across two repeats of stratified 5-fold validation. The cohort has 303 records, targets are imbalanced, and vessel metrics vary across folds. There is no external cohort, independent holdout, clinical threshold validation, or evidence of clinical utility.
 
-![Cardia Atlas schematic view from the local synthetic demo](submission/assets/cardia-atlas-3d-canvas.png)
+![Original anatomy-informed schematic of the heart chambers and coronary courses used by Cardia Atlas](submission/assets/cardia-atlas-3d-canvas.png)
 
-*Application canvas captured from synthetic demo mode. The anatomy is an original schematic, not a medical mesh or precise lesion map.*
+*Original schematic diagram of the code-generated 3D illustration. Broad coronary courses follow cited anatomy references; this is not a patient-derived or clinician-reviewed anatomical mesh, and it does not show segment-level disease or measured lesions.*
 
 ## Architecture
 
@@ -64,7 +64,7 @@ Values are outer-fold mean ± standard deviation across two repeats of stratifie
 - `reports/`: editable report source, generated PDF and actual validation figure.
 - `docs/`: requirement checklist and third-party attribution.
 
-The visualization is an anterior-view educational schematic. RCA is routed on the viewer-left side to represent the patient's right, LAD along the anterior center, and LCX toward the patient's left/viewer-right. Rotate with drag, zoom with wheel/pinch, and select via artery label/card. Color bins are illustrative only: <33% green, 33–67% amber, >67% red. Selecting a vessel updates its SHAP summary. No output paints a measured lesion location.
+The visualization is an anterior-view educational illustration. LAD follows the anterior interventricular groove toward the apex; LCX tracks the left atrioventricular groove toward patient-left/viewer-right; RCA tracks the right atrioventricular groove toward patient-right/viewer-left. Rotate with drag, zoom with wheel/pinch, and select via artery label/card. Continuous color bins are illustrative only: [0,33%) green, [33,67%) amber, [67,100%] red. Selecting a vessel updates its SHAP summary. No output paints a measured lesion location. Anatomy guidance and original-geometry provenance are listed in `docs/third_party_notices.md`.
 
 ## API
 

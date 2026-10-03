@@ -29,6 +29,19 @@ class ModelContractTests(unittest.TestCase):
         self.assertEqual(set(self.bundle['models']),{'CAD','LAD','LCX','RCA'})
         self.assertEqual(set(self.bundle['model_names']),{'CAD','LAD','LCX','RCA'})
         self.assertEqual(self.bundle['threshold'],0.5)
+    def test_synthetic_demo_is_featurewise_median_mode(self):
+        from app.main import example
+        result=example()
+        self.assertIn('feature-wise medians',result['label'])
+        self.assertIn('at modes',result['label'])
+        for field in self.schema['fields']:
+            name=field['name']
+            if field['type']=='number':
+                self.assertAlmostEqual(float(result['values'][name]),float(self.df[name].median()))
+            elif field['type']=='coded_select':
+                self.assertAlmostEqual(float(result['values'][name]),float(self.df[name].mode(dropna=True).iloc[0]))
+            else:
+                self.assertEqual(result['values'][name],str(self.df[name].mode(dropna=True).iloc[0]))
     def test_missing_model_bundle_returns_readable_service_error(self):
         code = """import joblib\nfrom fastapi import HTTPException\ndef missing(*args, **kwargs): raise FileNotFoundError('missing model bundle')\njoblib.load=missing\nimport app.main as api\ntry: api.health()\nexcept HTTPException as e:\n print(e.status_code, e.detail)\n"""
         result=subprocess.check_output([sys.executable,'-c',code],cwd=ROOT,text=True)

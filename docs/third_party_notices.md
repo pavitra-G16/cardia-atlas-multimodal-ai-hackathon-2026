@@ -10,7 +10,7 @@ Three.js version 0.180.0, Copyright 2010–2025 Three.js Authors, MIT License. T
 
 ## Original visual content
 
-The schematic torso, heart silhouette, and coronary routes are procedural original code in `app/static/app.js`. No third-party anatomical model, image, or icon asset is redistributed.
+The heart chamber forms, great vessels, torso backdrop, and coronary routes are original procedural Three.js geometry in `app/static/app.js`. The report image `submission/assets/cardia-atlas-3d-canvas.png` is an original project diagram rendered from the same broad route/layout specification and actual synthetic median/mode demo probabilities; Matplotlib is used only as a drawing library. No third-party anatomical model, image, or icon asset is redistributed. Broad coronary course references were used as anatomy guidance, not as copied visual assets: NHLBI, “How the Heart Works: How Blood Flows through the Heart” (https://www.nhlbi.nih.gov/health/heart/blood-flow); StatPearls, NCBI Bookshelf, “Anatomy, Thorax, Heart Left Anterior Descending (LAD) Artery” (https://www.ncbi.nlm.nih.gov/books/NBK482375/); and Ghadri et al., “Coronary Artery Anomalies: A Computed Tomography Angiography Pictorial Review” (https://pmc.ncbi.nlm.nih.gov/articles/PMC11242126/). Paths represent common broad grooves only; no segment-level anatomical accuracy, individual variation, clinician review, or medical use is claimed.
 
 ## AI assistance disclosure
 

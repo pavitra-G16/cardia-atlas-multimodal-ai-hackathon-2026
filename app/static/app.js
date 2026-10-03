@@ -1,12 +1,13 @@
 import * as THREE from './vendor/three.module.js';
 import { OrbitControls } from './vendor/OrbitControls.js';
+import { bandForProbability } from './risk_bands.mjs';
 
 const state={schema:null,example:null,result:null,selected:'CAD',scene:null,camera:null,renderer:null,controls:null,arteries:{},labels:{},raycaster:new THREE.Raycaster(),pointer:new THREE.Vector2()};
 const $=id=>document.getElementById(id);
 const vesselLabels={LAD:'LAD · anterior descending',LCX:'LCX · circumflex',RCA:'RCA · right coronary'};
 const targetNames={CAD:'Overall CAD',LAD:'LAD',LCX:'LCX',RCA:'RCA'};
 const colors={low:0x69c69a,moderate:0xe5b66c,high:0xee7270,neutral:0x779096};
-function riskColor(p){return p<.33?colors.low:p<.67?colors.moderate:colors.high}
+function riskColor(p){return colors[bandForProbability(p)]}
 function hexColor(n){return `#${n.toString(16).padStart(6,'0')}`}
 function esc(s){return String(s).replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]))}
 
@@ -88,8 +89,8 @@ function setArteryProbabilities(preds){
 }
 function renderPerformance(report){
   const show=x=>`${x.mean.toFixed(2)} ± ${x.sd.toFixed(2)}`;
-  const order=['CAD','LAD','LCX','RCA'];$('performance-grid').innerHTML=order.map(k=>{const r=report.targets[k],m=r.outer_fold_mean_sd;return `<article class="metric-card"><div class="metric-title">${targetNames[k].toUpperCase()}</div><div class="metric-model">${esc(r.selected_final_model)} · fixed threshold 0.50</div><div class="metric-pairs"><span><b>${show(m.accuracy)}</b><small>Accuracy · mean ± SD</small></span><span><b>${show(m.precision)}</b><small>Precision · mean ± SD</small></span><span><b>${show(m.recall_sensitivity)}</b><small>Recall · mean ± SD</small></span><span><b>${show(m.f1)}</b><small>F1 score · mean ± SD</small></span><span><b>${show(m.roc_auc)}</b><small>ROC-AUC · mean ± SD</small></span><span><b>${show(m.specificity)}</b><small>Specificity · mean ± SD</small></span></div></article>`}).join('');
-  $('method-note').textContent=`${report.validation} ${report.predictor_count} predictors, 303 records. Threshold 0.50 was fixed before evaluation; no threshold optimization. The repeat-fold summaries are internal estimates, not independent validation.`;
+  const order=['CAD','LAD','LCX','RCA'];$('performance-grid').innerHTML=order.map(k=>{const r=report.targets[k],m=r.outer_fold_mean_sd;return `<article class="metric-card"><div class="metric-title">${targetNames[k].toUpperCase()}</div><div class="metric-model">Final refit family: ${esc(r.selected_final_model)} · threshold 0.50</div><div class="metric-pairs"><span><b>${show(m.accuracy)}</b><small>Outer CV accuracy · mean ± SD</small></span><span><b>${show(m.precision)}</b><small>Outer CV precision · mean ± SD</small></span><span><b>${show(m.recall_sensitivity)}</b><small>Outer CV recall · mean ± SD</small></span><span><b>${show(m.f1)}</b><small>Outer CV F1 · mean ± SD</small></span><span><b>${show(m.roc_auc)}</b><small>Outer CV ROC-AUC · mean ± SD</small></span><span><b>${show(m.specificity)}</b><small>Outer CV specificity · mean ± SD</small></span></div></article>`}).join('');
+  $('method-note').textContent=`${report.validation} Outer-fold scores estimate that inner-CV model-selection procedure; they are not a separate performance estimate for the particular final refit family shown on each card. The displayed family was selected in a separate 5-fold comparison on all 303 records and then refit on all records. ${report.predictor_count} predictors. Threshold 0.50 was fixed in advance. No independent cohort was available.`;
 }
 function showError(message){$('error-box').textContent=message;$('error-box').classList.remove('hidden')}
 function clearError(){$('error-box').classList.add('hidden');$('error-box').textContent=''}
@@ -106,27 +107,42 @@ function mountThree(){
   const chest=new THREE.Mesh(new THREE.SphereGeometry(1,32,24),torsoMat);chest.scale.set(1.15,1.5,.27);chest.position.set(0,-.02,-.62);group.add(chest);
   for(const x of [-.7,.7]){const shoulder=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),torsoMat);shoulder.scale.set(.62,.42,.28);shoulder.position.set(x,.95,-.58);group.add(shoulder)}
   const neck=new THREE.Mesh(new THREE.CylinderGeometry(.22,.27,.48,20),torsoMat);neck.position.set(0,1.65,-.58);group.add(neck);
-  // An original, schematic heart silhouette generated from a parametric 2D outline; not a licensed anatomical mesh.
-  const heartShape=new THREE.Shape();let first=true;
-  for(let i=0;i<=120;i++){const t=i/120*Math.PI*2;const x=16*Math.pow(Math.sin(t),3)*.064;const y=(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))*.064;if(first){heartShape.moveTo(x,y);first=false}else heartShape.lineTo(x,y)}heartShape.closePath();
-  const heartGeom=new THREE.ExtrudeGeometry(heartShape,{depth:.28,bevelEnabled:true,bevelSegments:4,steps:1,bevelSize:.09,bevelThickness:.08});heartGeom.center();
-  const heart=new THREE.Mesh(heartGeom,new THREE.MeshStandardMaterial({color:0x8a4e53,roughness:.45,metalness:.06,emissive:0x2e1118,emissiveIntensity:.4}));heart.scale.set(.92,.96,.9);heart.position.set(0,-.03,.04);group.add(heart);
-  const aorta=new THREE.Mesh(new THREE.TorusGeometry(.34,.09,12,40,Math.PI*1.6),new THREE.MeshStandardMaterial({color:0xb97370,roughness:.42,metalness:.05}));aorta.rotation.z=Math.PI*.04;aorta.position.set(.07,.73,-.04);group.add(aorta);
-  addTube('RCA',[[-.17,.55,.34],[-.38,.42,.36],[-.59,.19,.34],[-.6,-.15,.3],[-.42,-.45,.31],[-.13,-.58,.34]],colors.neutral,group);
-  addTube('LAD',[[.02,.54,.36],[.08,.31,.38],[.12,.03,.39],[.04,-.27,.36],[-.02,-.55,.32]],colors.neutral,group);
-  addTube('LCX',[[.14,.52,.34],[.36,.43,.37],[.58,.25,.33],[.62,.02,.29],[.46,-.18,.3],[.25,-.27,.31]],colors.neutral,group);
-  // Faint anterior orientation marks; positional anatomy is schematic only.
-  const seam=new THREE.Mesh(new THREE.TorusGeometry(.28,.012,6,32,Math.PI),new THREE.MeshBasicMaterial({color:0xe3b3a5,transparent:true,opacity:.36}));seam.position.set(0,-.13,.24);seam.rotation.z=Math.PI;group.add(seam);
+  // Original anatomy-informed 3D illustration. Chamber lobes, great vessels, and coronary paths
+  // are constructed here; no downloaded mesh or unverified third-party geometry is bundled.
+  const myocardium=new THREE.MeshStandardMaterial({color:0x8d4d52,roughness:.58,metalness:.02,emissive:0x210d12,emissiveIntensity:.16});
+  const chamber=(name,pos,scale,rot=0,color=0x8d4d52)=>{const m=new THREE.Mesh(new THREE.SphereGeometry(1,40,32),myocardium.clone());m.material.color.setHex(color);m.name=name;m.scale.set(...scale);m.position.set(...pos);m.rotation.z=rot;group.add(m);return m};
+  // The anterior right atrium/right ventricle sit on viewer-left (patient-right); the left
+  // chambers are viewer-right. The ventricle mass tapers obliquely to an apex.
+  chamber('right-ventricle',[-.22,-.10,.16],[.48,.69,.34],-.12,0x95585a);
+  chamber('left-ventricle',[.18,-.19,-.03],[.52,.79,.37],.22,0x81474c);
+  chamber('right-atrium',[-.31,.48,.045],[.34,.38,.30],-.16,0xa36364);
+  chamber('left-atrium',[.27,.47,-.10],[.36,.34,.28],.12,0x905458);
+  // Rounded ventricular apex, shifted toward the patient's left (viewer-right).
+  const apex=chamber('ventricular-apex',[.17,-.72,.055],[.27,.35,.29],.30,0x81474c);
+  // Great vessels, in front/behind the atrial base to preserve their visible origins.
+  addStructureTube([[.12,.33,-.02],[.12,.55,-.04],[.15,.78,-.05],[.30,.96,-.06],[.49,1.00,-.08],[.62,.86,-.10],[.62,.61,-.11]],.105,0xb96d68,group);
+  addStructureTube([[-.04,.31,.10],[-.03,.52,.20],[-.10,.72,.20],[-.30,.86,.16],[-.50,.85,.12]],.085,0x66899a,group);
+  addStructureTube([[-.31,.56,-.02],[-.31,.92,-.03],[-.31,1.17,-.04]],.105,0x718d9a,group);
+  addStructureTube([[-.34,-.51,-.12],[-.34,-.77,-.10],[-.32,-1.02,-.08]],.105,0x718d9a,group);
+  // Short left-main trunk bifurcates: LAD follows the anterior IV groove to the apex;
+  // LCX follows the patient's left AV groove (viewer-right). RCA tracks the right AV groove.
+  addStructureTube([[.08,.48,.27],[.18,.43,.34],[.24,.38,.34]],.037,0xe7b2a0,group);
+  addTube('RCA',[[-.14,.55,.32],[-.37,.49,.32],[-.60,.31,.29],[-.67,.02,.25],[-.58,-.29,.18],[-.37,-.47,.02],[-.12,-.50,-.22]],colors.neutral,group);
+  addTube('LAD',[[.24,.38,.34],[.15,.20,.42],[.08,-.04,.43],[.12,-.33,.37],[.20,-.59,.29],[.22,-.82,.16]],colors.neutral,group);
+  addTube('LCX',[[.22,.38,.34],[.43,.46,.26],[.64,.40,.17],[.70,.20,.08],[.66,.00,-.04],[.52,-.13,-.20]],colors.neutral,group);
+  // Small diagonal branch illustrates ordinary branching without claiming segment mapping.
+  addStructureTube([[.10,.02,.42],[.32,.08,.35],[.48,.12,.25]],.018,0xdca095,group);
   state.scene=scene;state.camera=camera;state.renderer=renderer;state.controls=controls;
   const resize=()=>{const r=wrap.getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix()};new ResizeObserver(resize).observe(wrap);resize();
   renderer.domElement.addEventListener('pointerdown',onCanvasPick);
   const animate=()=>{requestAnimationFrame(animate);controls.update();scene.updateMatrixWorld(true);updateVesselLabels();renderer.render(scene,camera)};animate();
 }
 function addTube(key,points,color,group){
-  const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,64,.033,10,false),new THREE.MeshStandardMaterial({color,roughness:.32,metalness:.14,emissive:color,emissiveIntensity:.15}));mesh.userData.vessel=key;mesh.name=`artery-${key}`;group.add(mesh);state.arteries[key]=mesh;
+  const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,64,.034,10,false),new THREE.MeshStandardMaterial({color,roughness:.32,metalness:.08,emissive:color,emissiveIntensity:.12}));mesh.userData.vessel=key;mesh.name=`artery-${key}`;group.add(mesh);state.arteries[key]=mesh;
   const p=curve.getPointAt(.53);const marker=new THREE.Mesh(new THREE.SphereGeometry(.08,16,12),new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.24}));marker.position.copy(p);marker.userData.vessel=key;group.add(marker);
   const el=document.createElement('button');el.className='canvas-label';el.style.pointerEvents='auto';el.textContent=key;el.addEventListener('click',()=>selectTarget(key));$('canvas-labels').append(el);state.labels[key]={element:el,anchor:marker};
 }
+function addStructureTube(points,radius,color,group){const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));const material=new THREE.MeshStandardMaterial({color,roughness:.4,metalness:.02,emissive:color,emissiveIntensity:.06});const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,48,radius,12,false),material);mesh.name='anatomy-structure';group.add(mesh);return mesh}
 function updateVesselLabels(){
   const width=state.renderer.domElement.clientWidth,height=state.renderer.domElement.clientHeight;
   for(const {element,anchor} of Object.values(state.labels)){
