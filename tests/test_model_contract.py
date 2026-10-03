@@ -47,4 +47,17 @@ class ModelContractTests(unittest.TestCase):
         result=subprocess.check_output([sys.executable,'-c',code],cwd=ROOT,text=True)
         self.assertIn('503',result)
         self.assertIn('required model or schema artifact is unavailable or invalid',result)
+    def test_frontend_assets_revalidate_after_deployment(self):
+        import asyncio
+        from types import SimpleNamespace
+        from fastapi.responses import Response
+        from app.main import revalidate_frontend_assets
+        async def call_next(request): return Response()
+        for path in ['/', '/app.js', '/risk_bands.mjs', '/style.css']:
+            request=SimpleNamespace(url=SimpleNamespace(path=path))
+            response=asyncio.run(revalidate_frontend_assets(request,call_next))
+            self.assertEqual(response.headers.get('cache-control'),'no-cache',path)
+        request=SimpleNamespace(url=SimpleNamespace(path='/api/health'))
+        response=asyncio.run(revalidate_frontend_assets(request,call_next))
+        self.assertIsNone(response.headers.get('cache-control'))
 if __name__=='__main__': unittest.main()

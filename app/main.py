@@ -26,6 +26,14 @@ except (OSError,ValueError,KeyError,AttributeError) as exc:
 
 app=FastAPI(title='Cardia Atlas API',version='1.0.0',description='Local educational CAD and vessel stenosis decision-support prototype.')
 
+@app.middleware('http')
+async def revalidate_frontend_assets(request, call_next):
+    response=await call_next(request)
+    path=request.url.path
+    if path=='/' or path.endswith(('.js','.mjs','.css')):
+        response.headers['Cache-Control']='no-cache'
+    return response
+
 class PredictRequest(BaseModel):
     values: dict[str, object]
 
