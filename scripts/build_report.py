@@ -133,6 +133,6 @@ story += [Spacer(1,6),P('Architecture, verification & limits','H1X'),
  P('Dataset: Alizadehsani R, Roshanzamir M, Sani Z. (2013). UCI Machine Learning Repository, DOI 10.24432/C5461K, CC BY 4.0. Anatomy labels: NHLBI, “How the Heart Works: How Blood Flows through the Heart,” nhlbi.nih.gov/health/heart/blood-flow. SHAP method: official SHAP documentation, shap.readthedocs.io. Three.js 0.180.0, MIT License, github.com/mrdoob/three.js; original library headers are retained. Schematic heart and vessels are original code, not anatomically precise. OpenAI Codex assisted implementation, model workflow, interface, checks and documentation; this is disclosed in the README and must be entered in Devpost Built With.'),
  P('Track A source: participant-provided four-page Track A brief. Event deadline checked on official Devpost: 15 October 2026, 12:15 AM IST. Report length: 5 pages (limit: 6). Demo video duration required by the brief: 3–10 minutes; a timed script is included separately.','SmallX')]
 
-doc=SimpleDocTemplate(str(OUT),pagesize=letter,rightMargin=.65*inch,leftMargin=.65*inch,topMargin=.62*inch,bottomMargin=.58*inch,title='Cardia Atlas - Track A Report',author='Cardia Atlas project team')
+doc=SimpleDocTemplate(str(OUT),pagesize=letter,rightMargin=.65*inch,leftMargin=.65*inch,topMargin=.62*inch,bottomMargin=.58*inch,title='Cardia Atlas - Track A Report',author='Pavitra Gangwar')
 doc.build(story,onFirstPage=header_footer,onLaterPages=header_footer)
 print(f'Wrote {OUT}')
