@@ -40,6 +40,19 @@ The UI expands documented clinical shorthand such as DM, HTN, CVA, and CHF using
 
 Performance in the accompanying report comes from repeated outer-fold validation, reported as outer-fold mean ± standard deviation, with a fixed 0.50 threshold. Brier score and 5-bin expected calibration error/reliability bins were also computed on outer-fold probabilities as descriptive calibration checks; no recalibration was performed and the scores are not validated clinical risks. Targets are imbalanced, and results vary by fold. LAD performed better than LCX/RCA; no result establishes clinical utility. The model family chosen from the complete dataset is CAD Extra Trees, LAD Random Forest, LCX Random Forest, and RCA Logistic Regression (the artifact records the separate all-data 5-fold selection scores). Refer to `artifacts/evaluation.json` for full metrics, confusion matrices, fold-level values, and model selection evidence.
 
+| Target | Accuracy | Precision | Recall | F1 | ROC-AUC |
+|---|---:|---:|---:|---:|---:|
+| CAD | 0.86 ± 0.05 | 0.92 ± 0.04 | 0.88 ± 0.06 | 0.90 ± 0.04 | 0.92 ± 0.03 |
+| LAD | 0.77 ± 0.06 | 0.80 ± 0.07 | 0.83 ± 0.06 | 0.81 ± 0.04 | 0.84 ± 0.05 |
+| LCX | 0.70 ± 0.07 | 0.63 ± 0.11 | 0.63 ± 0.10 | 0.63 ± 0.08 | 0.75 ± 0.08 |
+| RCA | 0.65 ± 0.05 | 0.54 ± 0.06 | 0.55 ± 0.11 | 0.54 ± 0.07 | 0.72 ± 0.06 |
+
+Values are outer-fold mean ± standard deviation across two repeats of stratified 5-fold validation. The cohort has 303 records, targets are imbalanced, and vessel metrics vary across folds. There is no external cohort, independent holdout, clinical threshold validation, or evidence of clinical utility.
+
+![Cardia Atlas schematic view from the local synthetic demo](submission/assets/cardia-atlas-3d-canvas.png)
+
+*Application canvas captured from synthetic demo mode. The anatomy is an original schematic, not a medical mesh or precise lesion map.*
+
 ## Architecture
 
 - `app/main.py`: FastAPI API, input validation, inference, feature mapping, SHAP, health/schema/performance endpoints.
