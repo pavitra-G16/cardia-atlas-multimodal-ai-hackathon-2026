@@ -4,6 +4,8 @@ Cardia Atlas is an educational web prototype for Track A of the Multimodal AI Ha
 
 **Developed by Pavitra Gangwar.**
 
+Source repository: <https://github.com/pavitra-G16/cardia-atlas-multimodal-ai-hackathon-2026>. Public hosting deployment is pending final confirmation and has not been smoke-tested; no live app URL is claimed.
+
 > **Safety:** This is a research and educational prototype, not a diagnostic device or clinical risk calculator. It is not a substitute for a clinician or formal diagnostic imaging. Probabilities are model outputs, not measured stenosis percentages or lesion locations.
 
 ## Run the application
@@ -73,14 +75,14 @@ The integrated local API was exercised with the synthetic demo profile, all fiel
 
 ## Build and container
 
-`Dockerfile` packages the local API, bundled UI, model pipelines, and data required for example inputs and SHAP. It listens on `PORT` (default 10000), exposes `/api/health` as its health check, and `render.yaml` prepares a single Docker web service. The deployment blueprint and container were not verified here because Docker and an authenticated hosting account were unavailable. The configured free service may have cold starts and resource limits; performance and SHAP latency must be smoke-tested on the host before sharing a public URL.
+`Dockerfile` packages the local API, bundled UI, model pipelines, and data required for example inputs and SHAP. It listens on `PORT` (default 10000), exposes `/api/health` as its health check, and `render.yaml` prepares a single Docker web service. The Render Blueprint parses locally; Docker is unavailable, so the image build/start has not been verified. A free web service may have cold starts and resource limits; performance and SHAP latency require host smoke tests. A live public deployment is not claimed until deployed and verified.
 
 ```bash
 docker build -t cardia-atlas .
 docker run --rm -e PORT=8000 -p 8000:8000 cardia-atlas
 ```
 
-For Render, authenticate and connect this GitHub repository, create a Blueprint from `render.yaml`, and deploy the Docker web service. It serves both the frontend and API in one process/container; no external model download or API secret is configured. Verify `/api/health`, `/?demo=1`, `POST /api/predict`, and browser 3D interactions after deployment. Do not treat deployment as complete until those public checks pass.
+For Render, select this public GitHub repository, create a Blueprint from `render.yaml`, and deploy the Docker web service. The app serves frontend and API from one container; no external model download or API secret is configured. A Blueprint review is prepared in Render, but final deployment and host checks are still pending. Verify `/api/health`, `/?demo=1`, `POST /api/predict`, and browser 3D interactions before sharing a live URL.
 
 ## Data and third-party attribution
 

@@ -74,8 +74,8 @@ Status meanings: **PASS** = directly checked in the local project; **FAIL** = kn
 | Anatomical correctness of the visual | UNVERIFIED | Intentionally retained as an original simplified schematic; it is not an anatomical mesh. Vessel labels/routes are schematic, not validated segment-level anatomy. |
 | Local automated tests and frontend syntax | PASS | 4 unit tests and `node --check app/static/app.js`; see `docs/verification.md` |
 | Container build and hosted resource behavior | UNVERIFIED | Docker is not installed; `Dockerfile`/`render.yaml` now use dynamic `PORT` and health endpoint |
-| GitHub publication | FAIL | `gh auth status` reported the stored `pavitra-G16` token is invalid; no remote repository was created and no source pushed. Authenticate with `gh auth login -h github.com`, then create a new repository; no existing Git history was found in this folder. |
-| Public deployment and live prediction/explanation smoke tests | UNVERIFIED | No deployment account/session or deployment CLI was available. Render Blueprint is prepared; app is only verified locally. No live URL exists. |
+| GitHub publication | PASS | Public repository `https://github.com/pavitra-G16/cardia-atlas-multimodal-ai-hackathon-2026`; fresh root commit `be07d60c2378d45b350378bf8aad879eba6623c9` is on `main`. Remote contents and SHA were checked. |
+| Public deployment and live prediction/explanation smoke tests | UNVERIFIED | Render dashboard is authenticated and the final Blueprint review is prepared for the free Docker service. Provisioning/deployment is pending user confirmation in the browser. No live URL exists yet; Docker and hosted behavior remain unverified. |
 | YouTube demo and hackathon submission | FAIL | Neither was uploaded or submitted. Entrant must record/upload video and complete Devpost entry. |
 
 The official Track A PDF and Devpost rules/overview were reviewed earlier in this project. No separate common-rules document or submission form was supplied. No submission field or archive limit has been inferred.
