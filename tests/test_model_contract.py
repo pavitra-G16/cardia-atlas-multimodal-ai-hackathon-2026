@@ -1,0 +1,37 @@
+import json, unittest, subprocess, sys
+from pathlib import Path
+import joblib, pandas as pd
+ROOT=Path(__file__).resolve().parents[1]
+class ModelContractTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.bundle=joblib.load(ROOT/'artifacts/cardia_models.joblib')
+        cls.audit=json.loads((ROOT/'artifacts/data_audit.json').read_text())
+        cls.schema=json.loads((ROOT/'artifacts/ui_schema.json').read_text())
+        cls.df=pd.read_csv(ROOT/'data/source.csv')
+    def test_no_target_leakage_and_audited_schema(self):
+        features=self.bundle['features']
+        self.assertEqual(set(features),set(self.schema_feature_names()))
+        self.assertTrue({'Cath','LAD','LCX','RCA'}.isdisjoint(features))
+        self.assertEqual(len(features),54)
+        self.assertEqual(self.audit['n_rows'],303)
+        self.assertEqual(self.audit['duplicate_rows'],0)
+        self.assertEqual(sum(self.audit['missing_by_column'].values()),0)
+    def schema_feature_names(self): return [x['name'] for x in self.schema['fields']]
+    def test_reload_reproduces_bundle_predictions(self):
+        x=self.df[self.bundle['features']].iloc[[3]]
+        restored=joblib.load(ROOT/'artifacts/cardia_models.joblib')
+        for task, model in restored['models'].items():
+            p1=self.bundle['models'][task].predict_proba(x)[:,1]
+            p2=model.predict_proba(x)[:,1]
+            self.assertAlmostEqual(float(p1[0]),float(p2[0]),places=12)
+    def test_four_models_and_saved_metadata(self):
+        self.assertEqual(set(self.bundle['models']),{'CAD','LAD','LCX','RCA'})
+        self.assertEqual(set(self.bundle['model_names']),{'CAD','LAD','LCX','RCA'})
+        self.assertEqual(self.bundle['threshold'],0.5)
+    def test_missing_model_bundle_returns_readable_service_error(self):
+        code = """import joblib\nfrom fastapi import HTTPException\ndef missing(*args, **kwargs): raise FileNotFoundError('missing model bundle')\njoblib.load=missing\nimport app.main as api\ntry: api.health()\nexcept HTTPException as e:\n print(e.status_code, e.detail)\n"""
+        result=subprocess.check_output([sys.executable,'-c',code],cwd=ROOT,text=True)
+        self.assertIn('503',result)
+        self.assertIn('required model or schema artifact is unavailable or invalid',result)
+if __name__=='__main__': unittest.main()

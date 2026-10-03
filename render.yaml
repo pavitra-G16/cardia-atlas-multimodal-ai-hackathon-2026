@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: cardia-atlas
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health

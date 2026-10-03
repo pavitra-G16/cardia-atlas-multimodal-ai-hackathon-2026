@@ -1,0 +1,46 @@
+# Cardia Atlas
+
+**Track A: Cardiovascular Risk Visualization & Prediction**  
+Multimodal AI Hackathon 2026 · 4 October 2026
+
+**Developed by Pavitra Gangwar**
+
+## Summary
+Cardia Atlas is a local, browser-based educational prototype that estimates overall CAD and LAD, LCX, and RCA stenosis probabilities using 54 non-target clinical, examination, ECG, laboratory, and echocardiographic predictors from the UCI Extension of Z-Alizadeh Sani dataset. A FastAPI service serves four trained pipelines. The browser presents probabilities, an original interactive 3D schematic, and approximate patient-specific SHAP explanations. It is not a clinical risk calculator or diagnostic system.
+
+## Data and target handling
+The UCI workbook's primary sheet contains 303 records and 59 columns. It has no missing cells and no exact duplicate rows. `Cath` has 216 CAD and 87 Normal labels; LAD 177 Stenotic/126 Normal; LCX 119/184; RCA 114/189. The UCI definition calls CAD diameter narrowing of at least 50%, with one or more stenotic major arteries. 302 of 303 Cath labels agree with the OR of LAD/LCX/RCA labels; the supplied Cath target was retained, including the single mismatch. No record identifier is present. `Cath`, `LAD`, `LCX`, and `RCA` were excluded from every predictor matrix. Constant `Exertional CP` (303/303 N) was removed. Source spelling `Fmale` was normalized to `Female`. Other clinical, ECG, lab, and echo measurements were retained; `Region RWMA` is an echocardiographic feature, not a spatial lesion label. Numeric units are not supplied in UCI's variable table, so the form explicitly says “as recorded” instead of inventing units.
+
+Documented feature shorthand is expanded in display labels from a published description of this dataset. Source-coded numeric values and category levels stay unchanged; where UCI metadata does not define code meanings, the interface says so rather than assigning a guessed meaning.
+
+## Methods and evaluation
+Logistic Regression, Extra Trees, and Random Forest were compared using nested repeated stratified 5-fold outer validation (two repeats), with 3-fold ROC-AUC model selection in each outer training partition. All imputers, encoders, and scalers are inside fold-fit pipelines. The threshold was fixed at 0.50, without threshold tuning. For deployment, separate 5-fold ROC-AUC comparisons on all 303 records selected the final model families; the selected pipelines were then fit on all records. The outer-fold summaries below estimate performance; the final refit has no independent holdout. PR-AUC is average precision. Brier, 5-bin expected calibration error (ECE), and five-bin reliability were computed as descriptive calibration checks; no recalibration or calibration validation was performed.
+
+| Target | Deployed family | Accuracy | Precision | Sensitivity | Specificity | F1 | ROC-AUC | PR-AUC | Brier | ECE |
+|---|---|---|---|---|---|---|---|---|---|---|
+| CAD | Extra Trees | 0.86 ± 0.05 | 0.92 ± 0.04 | 0.88 ± 0.06 | 0.80 ± 0.10 | 0.90 ± 0.04 | 0.92 ± 0.03 | 0.97 ± 0.01 | 0.11 ± 0.02 | 0.11 ± 0.05 |
+| LAD | Random Forest | 0.77 ± 0.06 | 0.80 ± 0.07 | 0.83 ± 0.06 | 0.69 ± 0.13 | 0.81 ± 0.04 | 0.84 ± 0.05 | 0.88 ± 0.04 | 0.17 ± 0.02 | 0.12 ± 0.05 |
+| LCX | Random Forest | 0.70 ± 0.07 | 0.63 ± 0.11 | 0.63 ± 0.10 | 0.75 ± 0.10 | 0.63 ± 0.08 | 0.75 ± 0.08 | 0.63 ± 0.08 | 0.21 ± 0.03 | 0.11 ± 0.04 |
+| RCA | Logistic Regression | 0.65 ± 0.05 | 0.54 ± 0.06 | 0.55 ± 0.11 | 0.71 ± 0.07 | 0.54 ± 0.07 | 0.72 ± 0.06 | 0.60 ± 0.07 | 0.21 ± 0.02 | 0.12 ± 0.04 |
+
+Values are outer-fold mean ± SD. Repeated-fold pooled confusion counts (TN, FP, FN, TP; two repeat predictions per record) were CAD 140/34/52/380, LAD 175/77/62/292, LCX 277/91/88/150, RCA 269/109/102/126. Results are internal estimates on one small cohort, with class imbalance and fold variability; no external validation or clinical threshold study was performed.
+
+## Explanation and 3D view
+The patient-specific SHAP view explains the complete deployed preprocessing-plus-model pipeline. Permutation SHAP uses a fixed 24-row background and six permutations; encoded category contributions are summed back to source inputs. Contributions are shown in positive-class probability points. For each result, baseline plus feature contributions matched the prediction in API checks (observed absolute difference 0.0000). Finite permutations and dependent clinical features limit interpretability; contributions are associations, not causes.
+
+The app uses original procedural geometry for a translucent torso, heart silhouette, and schematic coronary paths. Anterior view maps viewer-left to patient-right for RCA, LAD centrally, and LCX toward viewer-right. Users can rotate, zoom, and select vessels. Color bands mark model probabilities only (<33%, 33–<67%, ≥67%); they do not depict measured lesion location or measured stenosis percentage.
+
+## Engineering, checks, and limitations
+The local stack is Python/FastAPI + scikit-learn/SHAP and plain browser JavaScript + bundled Three.js. Saved artifacts include all preprocessing/model pipelines, feature schema, data audit, experiment metrics, and source workbook. Verified: data/target audit, leakage exclusion, artifact reload equivalence, API health/schema/performance, valid synthetic example, all-fields-missing inference, invalid-category HTTP 422, SHAP additivity, browser WebGL view, result flow, and vessel selection. Automated unit tests pass. At a 390 px viewport, no horizontal page overflow was observed. Container build/start, cross-browser rendering, GPU-free performance across devices, independent clinical validation, and real video recording were not verified. The report is under six pages. The demo script is supplied; recording and submission are entrant actions.
+
+This tool is educational and not for clinical care. Calibration was assessed descriptively with Brier, ECE, and five-bin reliability, but not validated or corrected. There is no external cohort, prospective study, clinician review, or claim of readiness. UCI does not state measurement units in its feature table, so app inputs display source ranges/scale rather than inferred units.
+
+## References and attribution
+1. Alizadehsani, R., Roshanzamir, M., & Sani, Z. (2013). *extention of Z-Alizadeh sani dataset*. UCI Machine Learning Repository. DOI: 10.24432/C5461K. CC BY 4.0. https://archive.ics.uci.edu/dataset/411/extention%2Bof%2Bz%2B
+2. National Heart, Lung, and Blood Institute. “How the Heart Works: How Blood Flows through the Heart.” https://www.nhlbi.nih.gov/health/heart/blood-flow
+3. SHAP documentation. “PermutationExplainer” and explanation additivity. https://shap.readthedocs.io/en/latest/generated/shap.explainers.Permutation.html
+4. Three.js 0.180.0, MIT License. https://github.com/mrdoob/three.js
+5. Multimodal AI Hackathon 2026 official Devpost rules and event update. https://multimodal-ai-hackathon-2026-7.devpost.com/rules and https://multimodal-ai-hackathon-2026-7.devpost.com/updates
+6. Jin, Z. & Li, N. (2022). “Diagnosis of each main coronary artery stenosis based on whale optimization algorithm and stacking model.” *Mathematical Biosciences and Engineering*, 19(5), 4568–4591. DOI: 10.3934/mbe.2022211. Used only as a feature-name glossary, not as model-performance evidence.
+
+AI assistance disclosure: OpenAI Codex assisted with implementation, model workflow, interface, checks, and documentation; the entrant remains responsible for understanding and explaining the submission.
