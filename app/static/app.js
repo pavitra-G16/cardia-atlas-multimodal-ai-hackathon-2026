@@ -32,7 +32,10 @@ function renderForm(){
   const groups=state.schema.fields.reduce((a,f)=>((a[f.group]??=[]).push(f),a),{});
   $('field-count').textContent=`${state.schema.fields.length} predictors`;
   $('field-groups').innerHTML=Object.entries(groups).map(([group,fields],i)=>`<details class="field-group" ${i<2?'open':''}><summary>${esc(group)} <span>${fields.length} fields</span></summary><div class="fields">${fields.map(renderField).join('')}</div></details>`).join('');
-  document.querySelectorAll('#clinical-form input,#clinical-form select').forEach(el=>el.addEventListener('input',()=>delete el.dataset.demoExact));
+  document.querySelectorAll('#clinical-form input,#clinical-form select').forEach(el=>el.addEventListener('input',()=>{
+    delete el.dataset.demoExact;
+    $('example-note').textContent='Edited profile: values no longer match the synthetic feature-wise median/mode demo. Use synthetic data only.';
+  }));
 }
 function renderField(f){
   let input='';

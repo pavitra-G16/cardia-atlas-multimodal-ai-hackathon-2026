@@ -4,13 +4,13 @@ Cardia Atlas is an educational web prototype for Track A of the Multimodal AI Ha
 
 **Developed by Pavitra Gangwar.**
 
-Source repository: <https://github.com/pavitra-G16/cardia-atlas-multimodal-ai-hackathon-2026>. Public hosting deployment is pending final confirmation and has not been smoke-tested; no live app URL is claimed.
+Source repository: <https://github.com/pavitra-G16/cardia-atlas-multimodal-ai-hackathon-2026>. Public app: <https://cardia-atlas.onrender.com> (Render Free; verified on 4 October 2026).
 
 > **Safety:** This is a research and educational prototype, not a diagnostic device or clinical risk calculator. It is not a substitute for a clinician or formal diagnostic imaging. Probabilities are model outputs, not measured stenosis percentages or lesion locations.
 
 ## Run the application
 
-Verified runtime: Python 3.14.2, a modern WebGL-enabled browser. No API key, paid service, or external font/model request is needed at runtime. The Docker image targets Python 3.14; container startup still needs a local Docker verification.
+Verified runtime: Python 3.14.2, a modern WebGL-enabled browser. No API key, paid service, or external font/model request is needed at runtime. The local environment has no Docker engine, but Render built and started the Docker web service successfully.
 
 ```bash
 python3 -m venv .venv
@@ -95,7 +95,7 @@ docker build -t cardia-atlas .
 docker run --rm -e PORT=8000 -p 8000:8000 cardia-atlas
 ```
 
-For Render, select this public GitHub repository, create a Blueprint from `render.yaml`, and deploy the Docker web service. The app serves frontend and API from one container; no external model download or API secret is configured. A Blueprint review is prepared in Render, but final deployment and host checks are still pending. Verify `/api/health`, `/?demo=1`, `POST /api/predict`, and browser 3D interactions before sharing a live URL.
+The public Render Blueprint uses `render.yaml` and the same Docker service as the local stack. Verified at `https://cardia-atlas.onrender.com`: health endpoint, synthetic median/mode demo input, four predictions, all four SHAP explanation groups and additivity, and interactive input/vessel selection. The free instance sleeps when idle; its first request can have a cold start.
 
 ## Data and third-party attribution
 
