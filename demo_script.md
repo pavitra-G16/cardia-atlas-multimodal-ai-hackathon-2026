@@ -28,9 +28,9 @@
 
 ### 1:15–2:00 | Generate four predictions
 
-**Say:** “The local API returns one overall CAD score and three vessel-specific model probabilities. CAD uses Extra Trees, LAD and LCX use Random Forest, and RCA uses Logistic Regression, each selected independently using the documented cross-validation procedure.”
+**Say:** “The API returns one overall CAD score and three vessel-specific model probabilities. CAD uses Extra Trees, LAD and LCX use Random Forest, and RCA uses Logistic Regression, each selected independently using the documented cross-validation procedure.”
 
-**Do:** Click **Generate analysis**. Show the four probabilities and model families. State: “A displayed probability is the model's positive-class probability on this dataset task; the 0.50 class threshold is a fixed demonstration convention, not a clinical decision threshold.”
+**Do:** Click **Generate analysis**. Show the four probabilities and model families. State: “A displayed probability is the model's positive-class probability on this dataset task; the 0.50 class threshold is a fixed demonstration convention, not a clinical decision threshold.” If you edit an input, point out that the demo label changes to “Edited profile,” then generate the updated analysis.
 
 ### 2:00–2:50 | Explore the 3D view
 
@@ -40,7 +40,7 @@
 
 ### 2:50–3:40 | Patient-specific SHAP
 
-**Say:** “For the selected outcome, this chart shows approximate permutation SHAP contributions for the deployed preprocessing-plus-model pipeline. The baseline plus contributions reconstructs the model output on probability scale in our additivity check. Contributions are associations in this fitted model, not causal effects; correlated clinical inputs and finite permutations limit interpretation.”
+**Say:** “For the selected outcome, this chart shows the ten largest absolute approximate permutation SHAP contributions for the deployed preprocessing-plus-model pipeline. The additivity check uses the full 54-feature explanation, including contributions not shown in this compact chart. Blank values are imputed in the fitted pipeline and are labeled in the display. These contributions are associations in this fitted model, not causal effects; correlated clinical inputs and finite permutations limit interpretation.”
 
 **Do:** Select a vessel, read the baseline and probability, and show a few positive and negative feature contributions. Avoid describing a contribution as a medical cause.
 
@@ -52,7 +52,7 @@
 
 ### 4:30–5:00 | Architecture and reproducibility
 
-**Say:** “The browser calls a local FastAPI service. The serialized artifacts include all preprocessing and four fitted models; the data audit, nested evaluation, feature schema, setup scripts, source attribution, five-page report, and this demo script are included. The UCI dataset is CC BY 4.0; Three.js is MIT-licensed. OpenAI Codex assisted implementation and is disclosed in the README; I am responsible for understanding and explaining this code.”
+**Say:** “The browser calls the FastAPI service; the local and hosted versions use the same inference contract. The serialized artifacts include all preprocessing and four fitted models; the data audit, nested evaluation, feature schema, setup scripts, source attribution, five-page report, and this demo script are included. The UCI dataset is CC BY 4.0; Three.js is MIT-licensed. OpenAI Codex assisted implementation and is disclosed in the README; I am responsible for understanding and explaining this code.”
 
 **Do:** Briefly show README or report artifact list, then end on the safety disclaimer.
 
@@ -61,6 +61,6 @@
 1. Start the app and rehearse once with the synthetic demo data.
 2. Record a 3–10 minute screen-and-voice walkthrough; the script above targets five minutes.
 3. Review the video for readable text, audio, and visible synthetic-data/safety disclaimers.
-4. Upload the recording to YouTube if following the attached Track A brief's stated requirement; add the video link to the Devpost entry.
+4. Upload the required 3–10 minute recording to YouTube and add the video link to the Devpost entry.
 5. Check the current Devpost submission form and any file-size/asset constraints; the official pages reviewed did not specify them.
-6. Enter **OpenAI Codex** in Devpost Built With, disclose AI assistance in the README, confirm eligibility given the overview/rules wording difference, and submit before **15 October 2026, 12:15 AM IST**.
+6. Enter **OpenAI Codex** in Devpost Built With, disclose AI assistance in the README, verify that you meet the event's age-14+ requirement, and submit before **15 October 2026, 12:15 AM IST**.

@@ -1,6 +1,6 @@
 # Cardia Atlas
 
-Cardia Atlas is an educational web prototype for Track A of the Multimodal AI Hackathon 2026. It estimates overall coronary artery disease (CAD) and LAD, LCX, and RCA stenosis probabilities from the UCI Extension of Z-Alizadeh Sani dataset. It combines a local prediction API, patient-specific SHAP explanations, and an original anatomy-informed 3D heart illustration with schematic coronary paths.
+Cardia Atlas is an educational web prototype for Track A of the Multimodal AI Hackathon 2026. It estimates overall coronary artery disease (CAD) and LAD, LCX, and RCA stenosis probabilities from the UCI Extension of Z-Alizadeh Sani dataset. It combines a FastAPI prediction service, patient-specific SHAP explanations, and an original anatomy-informed 3D heart illustration with schematic coronary paths.
 
 **Developed by Pavitra Gangwar.**
 
@@ -18,7 +18,7 @@ python3 -m venv .venv
 .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Open <http://127.0.0.1:8000/>. The example button loads synthetic feature-wise median/mode values explicitly labeled as a demo; those values are not a study patient and are not evaluation evidence. Inputs are sent to the configured app API for inference and are not stored by the application. Use synthetic data only; do not submit identifiable or real patient data.
+Open <http://127.0.0.1:8000/>. Select **Load demo values** for the synthetic feature-wise median/mode profile, then select **Generate analysis**. Edit values and generate again to compare outputs, or select **Clear all** to reset the form and results. Drag the 3D view to rotate, use wheel/pinch to zoom, and select an artery label, vessel card, or result card to inspect its patient-specific explanation. The visible SHAP chart lists the 10 largest absolute contributions among 54 predictors; the additivity check uses the complete contribution set. The demo is not a study patient or evaluation evidence. Inputs are sent to the configured app API for inference and are not stored by the application. Use synthetic data only; do not submit identifiable or real patient data.
 
 ## Reproduce the data audit and training
 
@@ -88,14 +88,18 @@ The integrated local API was exercised with the synthetic demo profile, all fiel
 
 ## Build and container
 
-`Dockerfile` packages the local API, bundled UI, model pipelines, and data required for example inputs and SHAP. It listens on `PORT` (default 10000), exposes `/api/health` as its health check, and `render.yaml` prepares a single Docker web service. The Render Blueprint parses locally; Docker is unavailable, so the image build/start has not been verified. A free web service may have cold starts and resource limits; performance and SHAP latency require host smoke tests. A live public deployment is not claimed until deployed and verified.
+`Dockerfile` packages the API, bundled UI, model pipelines, and data required for example inputs and SHAP. It listens on `PORT` (default 10000), exposes `/api/health` as its health check, and `render.yaml` configures the same Docker web service currently hosted on Render. Render successfully built and started the deployed image. A local Docker build was not run because no Docker engine is installed. The Render Free instance sleeps when idle and has host resource limits; cold starts and prediction/explanation latency can vary.
 
 ```bash
 docker build -t cardia-atlas .
 docker run --rm -e PORT=8000 -p 8000:8000 cardia-atlas
 ```
 
-The public Render Blueprint uses `render.yaml` and the same Docker service as the local stack. Verified at `https://cardia-atlas.onrender.com`: health endpoint, synthetic median/mode demo input, four predictions, all four SHAP explanation groups and additivity, and interactive input/vessel selection. The free instance sleeps when idle; its first request can have a cold start.
+The public application is [https://cardia-atlas.onrender.com](https://cardia-atlas.onrender.com). The public source is [GitHub](https://github.com/pavitra-G16/cardia-atlas-multimodal-ai-hackathon-2026). The deployed app was checked for health, schema, performance, median/mode synthetic input, valid four-target inference, all four explanations, additivity, edited input updates, vessel selection, reset, and repeat prediction. The free instance sleeps when idle; its first request can have a cold start. One observed hosted prediction request took 55.25 seconds; this is a single observation, not a typical-latency estimate.
+
+## Hackathon submission notes
+
+Track A requires a 3–10 minute YouTube demonstration. The supplied [timed script](demo_script.md) targets five minutes; recording, upload, and Devpost submission remain entrant actions. The [official event overview](https://multimodal-ai-hackathon-2026-7.devpost.com/) shows an age-14+ and student-only requirement, while the [Rules page](https://multimodal-ai-hackathon-2026-7.devpost.com/rules) says individuals aged 14+ may apply and describes the event as primarily intended for college students. Confirm eligibility with the organizer if your status is unclear. The current Devpost submission editor requires sign-in and its field/file limits could not be inspected here; no additional limit is assumed. The listed deadline is 15 October 2026, 12:15 AM IST.
 
 ## Data and third-party attribution
 

@@ -1,6 +1,6 @@
 # Cardia Atlas Submission Package
 
-This package contains the local web application, source code, trained model pipelines, UCI source data and attribution, nested cross-validation results, report and editable report source, demo script, requirements checklist, verification record, and a Render Blueprint for optional public deployment.
+This package contains the browser application and API source, trained model pipelines, UCI source data and attribution, nested cross-validation results, report and editable report source, timed demo script, requirements checklist, verification record, and Render Blueprint matching the verified public deployment. The included model bundle supports inference without retraining.
 
 ## Start locally
 
@@ -8,11 +8,17 @@ See `README.md`. The supported command is `./scripts/run_local.sh`; then open ht
 
 ## Primary deliverables
 
-- `reports/cardia_atlas_report.pdf` (5 pages; brief limit: 6)
+- `reports/cardia_atlas_report.pdf` (at most 6 pages; checked against the attached brief)
+- `reports/report_source.md` and `scripts/build_report.py` (editable report content and reproducible PDF builder)
 - `artifacts/cardia_models.joblib` (four fitted pipelines and metadata)
+- `artifacts/*_pipeline.joblib` (the four individual fitted preprocessing + estimator pipelines)
+- `artifacts/features.json`, `artifacts/ui_schema.json`, `artifacts/evaluation.json`, `artifacts/evaluation.csv`, and `artifacts/data_audit.json` (feature, UI, evaluation, and data audit artifacts)
+- `requirements.txt`, `package.json`, `package-lock.json`, and `scripts/run_local.sh` (pinned setup and start files)
+- `data/source.csv`, `data/raw/` (source data copies; license and hash noted in attribution)
 - `demo_script.md` (timed 5-minute demonstration)
 - `docs/submission_checklist.md` and `docs/verification.md`
-- `render.yaml` and `Dockerfile` (deployment configuration; container build is not yet verified)
+- `docs/third_party_notices.md` (dataset, library, reference, and AI-use attribution)
+- `render.yaml` and `Dockerfile` (the hosted container build is verified; local Docker build was not run)
 
 ## Before submission
 

@@ -42,6 +42,35 @@ class ModelContractTests(unittest.TestCase):
                 self.assertAlmostEqual(float(result['values'][name]),float(self.df[name].mode(dropna=True).iloc[0]))
             else:
                 self.assertEqual(result['values'][name],str(self.df[name].mode(dropna=True).iloc[0]))
+    def test_explanation_matches_positive_probability_and_top_ten_display_contract(self):
+        from app.main import example, predict, PredictRequest
+        result=predict(PredictRequest(values=example()['values']))
+        self.assertEqual(set(result['predictions']),{'CAD','LAD','LCX','RCA'})
+        self.assertEqual(set(result['explanations']),{'CAD','LAD','LCX','RCA'})
+        names=set(self.bundle['features'])
+        for target in result['predictions']:
+            prediction=result['predictions'][target]['probability']
+            exp=result['explanations'][target]
+            self.assertEqual(exp['output_scale'],'positive-class predicted probability')
+            self.assertAlmostEqual(exp['prediction_probability'],prediction,places=12)
+            self.assertLess(exp['additivity_error'],1e-12)
+            self.assertEqual(len(exp['contributions']),10)
+            self.assertTrue({item['feature'] for item in exp['contributions']}.issubset(names))
+        note=(ROOT/'app/static/index.html').read_text()
+        self.assertIn('Showing the 10 largest absolute contributions of 54 predictors',note)
+        self.assertIn('Additivity uses the full feature contribution set',note)
+
+    def test_input_validation_blank_and_rejects_invalid_values(self):
+        from app.main import validate_values, HTTPException
+        self.assertEqual(len(validate_values({}).columns),54)
+        cases=[{'Age':float('nan')},{'Age':float('inf')},{'Age':-1},{'unknown_predictor':1}]
+        select=next(f for f in self.schema['fields'] if f['type']=='select')
+        cases.append({select['name']:'not-a-source-category'})
+        for values in cases:
+            with self.subTest(values=values), self.assertRaises(HTTPException) as raised:
+                validate_values(values)
+            self.assertEqual(raised.exception.status_code,422)
+
     def test_missing_model_bundle_returns_readable_service_error(self):
         code = """import joblib\nfrom fastapi import HTTPException\ndef missing(*args, **kwargs): raise FileNotFoundError('missing model bundle')\njoblib.load=missing\nimport app.main as api\ntry: api.health()\nexcept HTTPException as e:\n print(e.status_code, e.detail)\n"""
         result=subprocess.check_output([sys.executable,'-c',code],cwd=ROOT,text=True)

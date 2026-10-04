@@ -1,81 +1,60 @@
-# Official Requirements and Submission Checklist
+# Final Official Requirements and Submission Matrix
 
-Sources: all four pages of the participant-provided Track A brief; official Devpost event rules, overview and update; official UCI repository entry. Track requirements below follow the PDF. Unspecified limits are not inferred.
+Audit date: 4 October 2026 (Asia/Kolkata). Status values are **PASS**, **FAIL**, or **UNVERIFIED** only. The Track A source is the participant-provided four-page official problem statement PDF. The event-wide sources are the [Devpost overview](https://multimodal-ai-hackathon-2026-7.devpost.com/), [Devpost rules](https://multimodal-ai-hackathon-2026-7.devpost.com/rules), and [event update](https://multimodal-ai-hackathon-2026-7.devpost.com/updates). No separate common-rules attachment was provided. Limits and requirements below are not inferred beyond those sources.
 
-## Track A mandatory requirements
+## Track A mandatory requirements and deliverables
 
-| Requirement | Status | Evidence |
+| Requirement | Status | Evidence / remaining action |
 |---|---|---|
-| Predict overall CAD | Complete | `artifacts/cardia_models.joblib` → `CAD`; source label `Cath` |
-| Predict LAD, LCX, RCA stenosis | Complete | Same bundle contains `LAD`, `LCX`, `RCA` |
-| Use demographic, exam, ECG, lab, echo features | Complete | 54 predictor schema in `artifacts/features.json`, `artifacts/ui_schema.json` |
-| Exclude `LAD`, `LCX`, `RCA`, `Cath` from every predictor matrix | Complete | `scripts/train.py`; `tests/test_model_contract.py` |
-| Classification evaluation: accuracy, precision, recall, F1, ROC-AUC | Complete | `artifacts/evaluation.json`; report PDF |
-| Interactive 3D torso/heart | Complete | `app/static/app.js`; browser-rendered and inspected original schematic |
-| Vessel probability coloring for LAD/LCX/RCA | Complete | `app/static/app.js`; color legend in application |
-| Rotate, zoom, select anatomical region/vessel | Complete | Local browser interaction verified; labels track 3D vessel markers |
-| Show CAD and vessel probabilities with 3D | Complete | Application dashboard |
-| Patient-specific interpretability and physiological inputs | Complete | Approximate permutation SHAP on deployed pipeline; app form and charts |
-| Clinical safety disclaimer | Complete | Visible UI callout and report |
-| Responsive, modern browser, no dedicated GPU requirement | Implemented; limited check | 3D uses WebGL/Three.js; narrow and desktop view inspected on one browser/device only |
-| Working integrated web prototype | Complete | Local FastAPI + bundled browser application, `scripts/run_local.sh` |
-| Clean code, model weights, documentation, max-six-page report | Complete | Complete source and serialized models in submission ZIP; report is 5 pages |
-| 3–10 minute YouTube demo | Script ready; recording outstanding | `demo_script.md`; recording/upload is a user action |
+| Predict overall CAD and LAD, LCX, RCA stenosis labels | PASS | Four fitted pipelines in `artifacts/cardia_models.joblib`; target definitions and encodings are audited below. |
+| Use demographic, clinical/exam, ECG, laboratory, and echocardiographic features | PASS | Audited 54-feature schema in `artifacts/features.json` and `artifacts/ui_schema.json`. |
+| Exclude all four target labels from every predictor matrix | PASS | `Cath`, `LAD`, `LCX`, and `RCA` absent from saved feature list; training code and regression test check the exclusion. |
+| Evaluate accuracy, precision, recall, F1, and ROC-AUC for all targets | PASS | Saved outer-fold metric means and standard deviations in `artifacts/evaluation.json`; also in app and report. Standard deviations are fold spread, not confidence intervals. |
+| Fit preprocessing and candidate selection within CV training folds | PASS | Scikit-learn pipelines fit median/mode imputers, one-hot encoder, scaler, and estimator inside inner/outer training folds; untouched outer fold is evaluated only after selection. Threshold fixed at 0.50. |
+| Distinguish nested outer-CV estimates from final refit performance | PASS | UI, report, README, and evaluation metadata say outer scores estimate the inner-CV selection procedure. Final family is separately selected via 5-fold ROC-AUC on all 303 rows, refit on all rows, and has no separate performance estimate. |
+| Show CAD/vessel results, class labels, thresholds, patient values, and explanations | PASS | Live UI displays four predicted probabilities, classes, model family, fixed 0.50 threshold, vessel detail, and patient-specific explanations. The SHAP chart shows the 10 largest absolute contributions out of 54; additivity uses the complete set. Blank values are marked as imputed. |
+| Interactive 3D torso/heart; probability colors; rotate, zoom, select regions | PASS | Original procedural Three.js illustration with torso/chamber/great-vessel forms and LAD/LCX/RCA branches; live interactions tested. Continuous bands are illustrative and exactly cover [0,0.33), [0.33,0.67), [0.67,1]. Text, labels, and numbers supplement color. |
+| Anatomical adequacy of the simplified heart and vessel paths | UNVERIFIED | Broad LAD/LCX/RCA courses were compared with cited NHLBI/NCBI references. This is explicitly anatomy-inspired and schematic; no clinician or segment-level validation was performed. No lesion localization is claimed. |
+| Safety disclaimer; not substitute for formal diagnostic imaging | PASS | Visible in application and report. README and UI say it is not a diagnosis or clinical risk calculator. |
+| Responsive prototype, technical architecture and reproducibility | PASS | Fresh archive install and inference, local API, public deployment, bundled Three.js, setup scripts, trained artifacts, and documented APIs checked. One 390 px viewport and desktop size checked on one browser/device only; keyboard focus checked for core controls. No broad device/browser, screen-reader, or GPU-free coverage is claimed. |
+| Project documentation, preprocessing, architecture, usage, evaluation; max six pages | PASS | Five-page report and editable source, README, setup, evaluation artifacts and references included; every final report page rendered and inspected. |
+| 3–10 minute YouTube demonstration video | FAIL | Required by Track A PDF. Five-minute timed script is ready, but video has not been recorded or uploaded. Entrant must record and upload it. |
 
-## Judging criteria from Track A brief
+## Judging criteria and evidence
 
-| Criterion | Weight | Project evidence |
+| Criterion | Weight | Evidence and limits |
 |---|---:|---|
-| Predictive performance, estimation quality, validation | 30% | Nested repeated stratified CV, fixed 0.50 threshold, ROC-AUC/PR-AUC/Brier/ECE and confusion counts in report/artifacts |
-| 3D visualization and spatial mapping | 25% | Original rotatable/zoomable anterior coronary schematic with anatomy labels and explicit probability legend |
-| Clinical interpretability | 20% | Patient-specific SHAP feature contributions, source values, explanations and safety limitations |
-| System integration | 15% | Patient form → local API → four model outputs → 3D colors and SHAP |
-| Technical implementation | 10% | Reproducible scripts, pinned dependencies, model artifacts, API health/schema, attribution and source documentation |
+| Predictive performance, estimation quality, validation | 30% | Nested repeated stratified 5-fold CV, two repeats; inner 3-fold model selection. Metrics include required classification measures plus PR-AUC, Brier, and descriptive 5-bin ECE/reliability. Small, imbalanced, single-source cohort; no external validation or validated clinical threshold. |
+| 3D visualization and spatial mapping | 25% | Original interactive anatomy-inspired schematic with labeled vessel paths and probability bands. Simplified illustration; anatomy adequacy not clinician-validated. |
+| Clinical interpretability | 20% | Approximate permutation SHAP of deployed preprocessing+model, patient values, imputation indicators, full-set additivity check. Finite permutations/correlated predictors limit interpretation; no causal claims. |
+| System integration | 15% | Input form → API → four results → color-mapped 3D → selected-target explanation. Local and public flows checked. |
+| Technical implementation | 10% | Reproducible Python/FastAPI + scikit-learn model pipelines, saved artifacts, tests, static frontend, attribution, and public source/deployment. |
 
-## Dataset and model audit evidence
+## Dataset and model audit
 
-- Official UCI dataset 411, Extension of Z-Alizadeh Sani, CC BY 4.0; SHA-256 of downloaded workbook: `739343245c2ba578b541370217531750d8e936022f928b83e0d91756caa3ff0b`.
-- Primary sheet: 303 records × 59 columns; zero missing values; zero exact duplicate rows; no identifier column.
-- Positive/negative counts: CAD 216/87, LAD 177/126, LCX 119/184, RCA 114/189.
-- One invariant predictor `Exertional CP` removed; `Fmale` normalized to `Female`; 54 remaining predictors.
-- 302/303 source `Cath` labels agree with the OR of vessel labels; the source label is preserved and the mismatch disclosed.
-- Outer evaluation uses two repeats of stratified 5-fold CV; inner 3-fold ROC-AUC selects among three fixed model families. Final family selection uses separate 5-fold ROC-AUC on all records, followed by fit on all records. No independent test cohort exists.
-- Brier and 5-bin ECE/reliability diagnostics were computed; no recalibration or calibration validation is claimed.
-- SHAP uses 24 fixed background rows and six permutations; additivity and source-feature mapping verified. It explains model associations, not causes.
+- UCI Extension of Z-Alizadeh Sani primary sheet: **303 rows × 59 columns**, zero missing cells and exact duplicates, no identifier.
+- Target definitions/encodings: `Cath` CAD/Normal; vessel labels Stenotic/Normal. Counts positive/negative: CAD 216/87, LAD 177/126, LCX 119/184, RCA 114/189. 302/303 Cath labels agree with the OR of vessel targets; source `Cath` is preserved including the mismatch.
+- 55 non-target columns before removing constant `Exertional CP`; final 54 predictor fields. `Fmale` spelling normalized to `Female`; no source targets are predictors.
+- Logistic Regression, Extra Trees, and Random Forest compared. Outer evaluation is repeated stratified 5-fold CV, two repeats; each outer training partition uses inner 3-fold ROC-AUC selection. All preprocessing is inside pipelines fit per training fold. Threshold 0.50 fixed in advance.
+- Final deployed families: CAD Extra Trees, LAD Random Forest, LCX Random Forest, RCA Logistic Regression. Selected using a separate five-fold comparison on all 303 records and refit on all records. No independent final-fit estimate.
+- Brier and 5-bin calibration diagnostics are descriptive only; not a clinical calibration study. Vessel outcomes are weaker than CAD and vary across folds.
+- Approximate permutation SHAP: 24-row fixed background, six permutations, one-hot contributions aggregated to source features. Additivity verified against positive-class probability. Associations are not causes.
 
-## Event-wide rules, deadlines and limits
+## Event-wide rules, eligibility, and limits
 
-- Event development period: 30 September–14 October 2026 EOD.
-- Devpost deadline: **15 October 2026, 12:15 AM IST** (just after midnight following 14 October).
-- Team rule: solo to four people; one track per team and one submitting team per individual.
-- Eligibility discrepancy: the event overview says “students only”; the separate Rules page says individuals aged 14+ and broader eligibility. Confirm eligibility with the organizer if needed.
-- AI coding assistants are allowed; disclose them in Devpost “Built With” and the README and be able to explain the work. README discloses OpenAI Codex.
-- Devpost is the submission destination. Track PDF limit: report ≤6 pages; video 3–10 minutes.
-- **Not stated in the reviewed official materials:** Devpost required-field details, archive/file-size cap, number of allowed assets/links, required hosting platform for source code, or any additional common-rule document. No limits have been invented. No separate common-rules attachment was present.
-
-## Deliverables and user actions
-
-- Local app, code, model weights, preprocessing, source dataset, attribution, report PDF/source, and demo script are included in the submission ZIP.
-- The report is verified at 5 pages; page renders were visually checked.
-- Video has not been recorded here. Record the supplied 5-minute script, upload to YouTube if required by the Track A brief, add the link to the Devpost entry, and disclose Codex under Built With.
-- Before submission, confirm entrant eligibility (overview/rules discrepancy), log in to Devpost, inspect current submission form/file limits, and submit before the deadline. Submission/public upload was not performed.
-
-## Final audit status (4 October 2026)
-
-Status meanings: **PASS** = directly checked in the local project; **FAIL** = known unmet requested outcome; **UNVERIFIED** = not checked or dependent on unavailable access.
-
-| Requirement or task | Status | Evidence / blocker |
+| Rule or requirement | Status | Evidence / remaining action |
 |---|---|---|
-| Track A outcome set, predictor families, and target exclusion | PASS | 4 serialized targets; 54 predictor fields; tests and data audit |
-| Leakage-safe fold preprocessing and fixed threshold | PASS | Training pipelines and saved nested repeated CV results; fixed 0.50 threshold |
-| Required actual metrics for every target | PASS | Accuracy, precision, recall, F1, and ROC-AUC in evaluation JSON/report/app |
-| Integrated 3D dashboard and patient SHAP | PASS | Local browser demo renders all targets, source feature values, contributions, baseline, and schematic controls |
-| Clinical disclaimer, probability bands, and uncertainty | PASS | UI labels schematic and bands; not a diagnostic or imaging substitute |
-| Anatomically informed original 3D visualization | PARTIAL | Original procedural chamber, great-vessel and artery geometry; broad LAD/LCX/RCA courses checked against NHLBI/NCBI references. The chamber illustration is simplified, not a clinical mesh, and has not had clinician review or segment-level anatomical validation. Provenance is documented in `docs/third_party_notices.md`. |
-| Local automated and browser interaction checks | PASS | 6 Python unit tests; continuous probability-boundary tests; frontend syntax; live local predictions, colors, vessel selection, explanations, rotation and wheel zoom response; see `docs/verification.md` |
-| Container build and hosted service | PASS | Render successfully built and started the Docker service on Free; `/api/health`, schema, performance, predictions, and explanations returned successfully. Local Docker build and long-term resource behavior were not tested. |
-| GitHub publication | PASS | New public repository `https://github.com/pavitra-G16/cardia-atlas-multimodal-ai-hackathon-2026`; latest `main` publication verified via GitHub API. |
-| Public deployment and live prediction/explanation smoke tests | PASS | `https://cardia-atlas.onrender.com`, Render service `cardia-atlas`; the published Render revision is Live. Public API returned actual demo inference for all four outcomes and explanations with 0.000 pp displayed additivity difference. The public browser UI, color bins, input update, vessel selection, and explanations were checked. Free instance may cold-start after inactivity. |
-| YouTube demo and hackathon submission | FAIL | Neither was uploaded or submitted. Entrant must record/upload video and complete Devpost entry. |
+| Devpost submission destination and deadline | PASS | Official pages list Devpost and **15 October 2026, 12:15 AM IST**; no entry has been submitted. Entrant must submit before cutoff. |
+| Age/student eligibility | UNVERIFIED | Overview says age 14+ and “Students only”; Rules says age 14+, primarily intended for college students, and all eligible individuals may apply. User's age/student status is unknown; clarify with organizer if applicable. |
+| Team of 1–4; one track/team per participant | UNVERIFIED | Rules are verified; actual Devpost team roster/registration was not inspected. Confirm entrant/team meets them. |
+| AI coding assistants allowed with disclosure | PASS | OpenAI Codex assistance disclosed in README and report. |
+| Devpost “Built With” AI disclosure | FAIL | Must enter OpenAI Codex in the actual submission form. |
+| Current form's required fields, file/asset caps, archive rules | UNVERIFIED | Manage-submission page redirects to sign-in/join; form cannot be inspected without entrant access. Public materials did not state these limits. Check form directly; no limit is assumed. |
+| Additional common rules document | UNVERIFIED | No separate common-rules document was supplied; official Devpost event rules were reviewed. |
 
-The official Track A PDF and Devpost rules/overview were reviewed earlier in this project. No separate common-rules document or submission form was supplied. No submission field or archive limit has been inferred.
+## Publication, package, and remaining actions
+
+- New public source repository: <https://github.com/pavitra-G16/cardia-atlas-multimodal-ai-hackathon-2026>.
+- Public application: <https://cardia-atlas.onrender.com>. Free Render service may cold-start; local Docker build was not run, though hosted Docker build/start succeeded.
+- `outputs/Cardia Atlas Complete Submission.zip` includes app/API source, dependency locks, trained model and preprocessing artifacts, source data/attribution, report and editable source, setup, demo script, verification, manifest, and Render configuration. Fresh unpacked environment installed pinned dependencies, passed all eight Python tests, and ran inference without retraining. One public prediction request took 55.25 seconds; Render Free may cold-start and latency varies. Archive excludes `.git`, virtual environments, Node modules, caches, work directories, and outputs.
+- Entrant actions: confirm eligibility/team; inspect the signed-in Devpost form and its current fields/limits; record the required 3–10 minute video; upload to YouTube; add the video link and Codex disclosure; submit the project by the listed deadline. Neither video upload nor Devpost submission was performed here.
