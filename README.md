@@ -95,7 +95,7 @@ docker build -t cardia-atlas .
 docker run --rm -e PORT=8000 -p 8000:8000 cardia-atlas
 ```
 
-The public application is [https://cardia-atlas.onrender.com](https://cardia-atlas.onrender.com). The public source is [GitHub](https://github.com/pavitra-G16/cardia-atlas-multimodal-ai-hackathon-2026). The deployed app was checked for health, schema, performance, median/mode synthetic input, valid four-target inference, all four explanations, additivity, edited input updates, vessel selection, reset, and repeat prediction. The free instance sleeps when idle; its first request can have a cold start. One observed hosted prediction request took 55.25 seconds; this is a single observation, not a typical-latency estimate.
+The public application is [https://cardia-atlas.onrender.com](https://cardia-atlas.onrender.com). The public source is [GitHub](https://github.com/pavitra-G16/cardia-atlas-multimodal-ai-hackathon-2026). The deployed app was checked for health, schema, performance, median/mode synthetic input, valid four-target inference, all four explanations, additivity, edited input updates, vessel selection, reset, and repeat prediction. The free instance sleeps when idle; its first request can have a cold start. Two observed hosted prediction requests took 55.25 and 59.28 seconds; this small sample does not estimate typical latency.
 
 ## Hackathon submission notes
 
