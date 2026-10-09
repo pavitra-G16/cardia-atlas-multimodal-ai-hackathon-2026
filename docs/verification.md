@@ -2,6 +2,12 @@
 
 Date: 4 October 2026 (Asia/Kolkata)
 
+## 9 October 2026 resilience update
+
+- Frontend startup now completes API/form initialization before attempting the optional WebGL scene. A WebGL construction failure replaces only the 3D panel with a clear compatibility message; it does not report an API outage or disable prediction, vessel scores, or explanations.
+- Each prediction run receives a monotonically increasing analysis version. Responses and failures from an invalidated run are ignored after **Clear all** or a newer submission. Selected-target explanation requests use the same version and result identity checks, so rapid target changes or a late response cannot attach an explanation to another profile.
+- Fresh local checks passed: JavaScript syntax, continuous probability-band boundary tests, frontend resilience tests (WebGL fallback, stale explanation success/failure, stale prediction), `git diff --check`, and all eight Python artifact/API contract tests. The report PDF remains five pages; its model-selection and metric tables are generated from `artifacts/evaluation.json`.
+
 ## Passed
 
 - Read all four pages of the supplied Track A brief and reviewed the official Devpost overview, rules, and event update; see `docs/submission_checklist.md` for the evidence matrix and unresolved entrant-only items.

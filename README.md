@@ -4,7 +4,7 @@ Cardia Atlas is an educational web prototype for Track A of the Multimodal AI Ha
 
 **Developed by Pavitra Gangwar.**
 
-Source repository: <https://github.com/pavitra-G16/cardia-atlas-multimodal-ai-hackathon-2026>. Public app: <https://cardia-atlas.onrender.com> (Render Free; verified on 4 October 2026).
+Source repository: <https://github.com/pavitra-G16/cardia-atlas-multimodal-ai-hackathon-2026>. Public app: <https://cardia-atlas.onrender.com> (Render Free; verification record in `docs/verification.md`).
 
 > **Safety:** This is a research and educational prototype, not a diagnostic device or clinical risk calculator. It is not a substitute for a clinician or formal diagnostic imaging. Probabilities are model outputs, not measured stenosis percentages or lesion locations.
 
@@ -18,7 +18,7 @@ python3 -m venv .venv
 .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Open <http://127.0.0.1:8000/>. Select **Load demo values** for the synthetic feature-wise median/mode profile, then select **Generate analysis**. The four prediction cards and 3D vessel colours render first; the currently selected outcome's SHAP explanation then loads separately. Edit values and generate again to compare outputs, or select **Clear all** to reset the form and results. Drag the 3D view to rotate, use wheel/pinch to zoom, and select an artery label, vessel card, or result card to inspect its patient-specific explanation. The visible SHAP chart lists the 10 largest absolute contributions among 54 predictors; the additivity check uses the complete contribution set. The demo is not a study patient or evaluation evidence. Inputs are sent to the configured app API for inference and are not stored by the application. Use synthetic data only; do not submit identifiable or real patient data.
+Open <http://127.0.0.1:8000/>. Select **Load demo values** for the synthetic feature-wise median/mode profile, then select **Generate analysis**. The four prediction cards and 3D vessel colours render first; the currently selected outcome's SHAP explanation then loads separately. Edit values and generate again to compare outputs, or select **Clear all** to reset the form and results. Drag the 3D view to rotate, use wheel/pinch to zoom, and select an artery label, vessel card, or result card to inspect its patient-specific explanation. The visible SHAP chart lists the 10 largest absolute contributions among 54 predictors; the additivity check uses the complete contribution set. If WebGL is unavailable, the 3D panel shows a compatibility message while the form, predictions, vessel list, and explanations remain usable. Late results from a prior prediction or explanation are discarded after a new analysis or clear action. The demo is not a study patient or evaluation evidence. Inputs are sent to the configured app API for inference and are not stored by the application. Use synthetic data only; do not submit identifiable or real patient data.
 
 ## Reproduce the data audit and training
 
@@ -85,7 +85,7 @@ Run the focused artifact/schema/serialization checks:
 .venv/bin/python -m unittest discover -s tests -v
 ```
 
-The integrated local API was exercised with the synthetic demo profile, all fields missing, and an invalid category; model probability, 422 validation and SHAP additivity were inspected. WebGL rendering, input flow, visible outputs, and vessel selection were inspected in the local browser. See the report and `docs/verification.md` for checks that remain unavailable in this environment.
+The integrated local API was exercised with the synthetic demo profile, all fields missing, and an invalid category; model probability, 422 validation and SHAP additivity were inspected. WebGL rendering, input flow, visible outputs, and vessel selection were inspected in the local browser. Automated frontend-resilience checks cover WebGL fallback plus stale explanation and prediction responses. See the report and `docs/verification.md` for checks that remain unavailable in this environment.
 
 ## Build and container
 

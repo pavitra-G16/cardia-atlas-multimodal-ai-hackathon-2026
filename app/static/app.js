@@ -2,7 +2,7 @@ import * as THREE from './vendor/three.module.js';
 import { OrbitControls } from './vendor/OrbitControls.js';
 import { bandForProbability } from './risk_bands.mjs';
 
-const state={schema:null,example:null,result:null,values:null,selected:'CAD',scene:null,camera:null,renderer:null,controls:null,arteries:{},labels:{},raycaster:new THREE.Raycaster(),pointer:new THREE.Vector2()};
+const state={schema:null,example:null,result:null,values:null,selected:'CAD',analysisVersion:0,pendingExplanations:new Map(),scene:null,camera:null,renderer:null,controls:null,arteries:{},labels:{},raycaster:new THREE.Raycaster(),pointer:new THREE.Vector2()};
 const $=id=>document.getElementById(id);
 const vesselLabels={LAD:'LAD · anterior descending',LCX:'LCX · circumflex',RCA:'RCA · right coronary'};
 const targetNames={CAD:'Overall CAD',LAD:'LAD',LCX:'LCX',RCA:'RCA'};
@@ -16,7 +16,13 @@ async function init(){
     const [s,e,p]=await Promise.all([fetch('/api/schema'),fetch('/api/example'),fetch('/api/performance')]);
     const failed=[s,e,p].find(x=>!x.ok);if(failed){let detail='The local API did not return its setup files.';try{detail=(await failed.json()).detail||detail}catch{}throw new Error(detail)}
     state.schema=await s.json();state.example=await e.json();const perf=await p.json();
-    renderForm();renderPerformance(perf);mountThree();await loadExample(false);
+    renderForm();renderPerformance(perf);await loadExample(false);
+    $('analysis-state').innerHTML='<i></i> Awaiting inputs';
+    try{mountThree()}catch(err){
+      const notice=document.createElement('p');notice.className='loading-explanation';notice.setAttribute('role','status');
+      notice.textContent='3D view unavailable in this browser. Enable WebGL or use a compatible browser to rotate and zoom the heart. Predictions, vessel scores and explanations remain available below.';
+      $('canvas-wrap').replaceChildren(notice);
+    }
   }catch(err){showError(err.message||String(err));$('analysis-state').innerHTML='<i></i> API unavailable';}
   $('clinical-form').addEventListener('submit',onSubmit);
   $('load-example').addEventListener('click',()=>loadExample(true));
@@ -56,16 +62,17 @@ async function loadExample(show=true){
   $('example-note').textContent=state.example.label||'Synthetic demonstration values only.';
   if(show){$('example-note').classList.add('flash');setTimeout(()=>$('example-note').classList.remove('flash'),800)}
 }
-function clearForm(){document.querySelectorAll('#clinical-form input,#clinical-form select').forEach(x=>{x.value='';delete x.dataset.demoExact});$('example-note').textContent='All fields cleared. Blank fields will be imputed by the fitted pipeline.';state.result=null;state.values=null;$('result-content').classList.add('hidden');$('results-empty').classList.remove('hidden');$('analysis-state').innerHTML='<i></i> Awaiting inputs';setArteryProbabilities(null)}
+function invalidateAnalysis(){state.analysisVersion+=1;state.pendingExplanations.clear();return state.analysisVersion}
+function clearForm(){invalidateAnalysis();document.querySelectorAll('#clinical-form input,#clinical-form select').forEach(x=>{x.value='';delete x.dataset.demoExact});$('example-note').textContent='All fields cleared. Blank fields will be imputed by the fitted pipeline.';state.result=null;state.values=null;$('result-content').classList.add('hidden');$('results-empty').classList.remove('hidden');$('analysis-state').innerHTML='<i></i> Awaiting inputs';setArteryProbabilities(null)}
 async function onSubmit(e){
-  e.preventDefault();clearError();const button=$('predict');button.disabled=true;button.innerHTML='<span>Calculating models & explanations…</span><span class="spinner"></span>';$('analysis-state').className='status-badge waiting';$('analysis-state').innerHTML='<i></i> Computing';
+  e.preventDefault();const analysisVersion=invalidateAnalysis();clearError();const button=$('predict');button.disabled=true;button.innerHTML='<span>Calculating models…</span><span class="spinner"></span>';$('analysis-state').className='status-badge waiting';$('analysis-state').innerHTML='<i></i> Computing';
   try{
     const values={};for(const f of state.schema.fields){const el=document.querySelector(`[name="${CSS.escape(f.name)}"]`);let v=el?.dataset.demoExact??el?.value??'';values[f.name]=v===''?null:(f.type==='number'||f.type==='coded_select'?Number(v):v)}
     const res=await fetch('/api/predict',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({values,include_explanations:false})});
-    const payload=await res.json();if(!res.ok)throw new Error(payload.detail||`Request failed (${res.status})`);
+    const payload=await res.json();if(!res.ok)throw new Error(payload.detail||`Request failed (${res.status})`);if(state.analysisVersion!==analysisVersion)return;
     state.values=values;state.result=payload;state.selected='CAD';renderResults();$('analysis-state').className='status-badge ready';$('analysis-state').innerHTML='<i></i> Predictions ready';loadExplanation('CAD');
-  }catch(err){showError(err.message||String(err));$('analysis-state').className='status-badge';$('analysis-state').innerHTML='<i></i> Could not analyze'}
-  finally{button.disabled=false;button.innerHTML='<span>Generate analysis</span><span aria-hidden="true">→</span>'}
+  }catch(err){if(state.analysisVersion!==analysisVersion)return;showError(err.message||String(err));$('analysis-state').className='status-badge';$('analysis-state').innerHTML='<i></i> Could not analyze'}
+  finally{if(state.analysisVersion===analysisVersion){button.disabled=false;button.innerHTML='<span>Generate analysis</span><span aria-hidden="true">→</span>'}}
 }
 function renderResults(){
   $('results-empty').classList.add('hidden');$('result-content').classList.remove('hidden');
@@ -89,15 +96,19 @@ function renderExplanation(){
 }
 async function loadExplanation(target){
   if(!state.result||state.result.explanations[target]||!state.values)return;
+  const analysis=state.result,values=state.values,analysisVersion=state.analysisVersion;
+  if(state.pendingExplanations.get(target)===analysisVersion)return;
+  state.pendingExplanations.set(target,analysisVersion);
   try{
     renderExplanation();
-    const res=await fetch(`/api/explain/${encodeURIComponent(target)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({values:state.values})});
+    const res=await fetch(`/api/explain/${encodeURIComponent(target)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({values})});
     const payload=await res.json();if(!res.ok)throw new Error(payload.detail||`Explanation request failed (${res.status})`);
-    state.result.explanations[target]=payload;
+    if(state.analysisVersion!==analysisVersion||state.result!==analysis)return;
+    analysis.explanations[target]=payload;
     if(state.selected===target)renderExplanation();
   }catch(err){
-    if(state.selected===target){$('baseline-line').textContent='Explanation unavailable.';$('shap-bars').innerHTML=`<div class="loading-explanation">${esc(err.message||String(err))}</div>`;}
-  }
+    if(state.analysisVersion===analysisVersion&&state.result===analysis&&state.selected===target){$('baseline-line').textContent='Explanation unavailable.';$('shap-bars').innerHTML=`<div class="loading-explanation">${esc(err.message||String(err))}</div>`;}
+  }finally{if(state.pendingExplanations.get(target)===analysisVersion)state.pendingExplanations.delete(target)}
 }
 function setArteryProbabilities(preds){
   for(const [key,obj] of Object.entries(state.arteries)){const p=preds?.[key]?.probability;const color=p==null?colors.neutral:riskColor(p);obj.material.color.setHex(color);obj.material.emissive.setHex(color);obj.material.emissiveIntensity=.18;obj.children?.forEach?.(c=>c.material?.color?.setHex(color))}
