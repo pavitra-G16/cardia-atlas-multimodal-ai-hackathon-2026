@@ -89,7 +89,7 @@ The integrated local API was exercised with the synthetic demo profile, all fiel
 
 ## Build and container
 
-`Dockerfile` packages the API, bundled UI, model pipelines, and data required for example inputs and SHAP. It listens on `PORT` (default 10000), exposes `/api/health` as its health check, and `render.yaml` is a Render Blueprint with automatic Git deployment enabled. The browser requests four scores first and loads only the selected SHAP explanation afterwards, so model-output cards are not delayed by the other three explanation calculations. Render Free still sleeps when idle and has host resource limits; a cold start cannot be eliminated by the Blueprint itself.
+`Dockerfile` packages the API, bundled UI, model pipelines, and data required for example inputs and SHAP. It listens on `PORT` (default 10000), exposes `/api/health` as its health check, and `render.yaml` is a Render Blueprint with automatic Git deployment enabled. The browser requests four scores first and loads only the selected SHAP explanation afterwards, so model-output cards are not delayed by the other three explanation calculations. Render Free still sleeps when idle and has host resource limits; a cold start cannot be eliminated by the Blueprint itself. For a judged demo, open the live URL several minutes early, load the synthetic demo once to wake the service, and keep the local app command above ready as a backup; state clearly if the fallback is being used.
 
 ```bash
 docker build -t cardia-atlas .
