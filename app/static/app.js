@@ -2,7 +2,7 @@ import * as THREE from './vendor/three.module.js';
 import { OrbitControls } from './vendor/OrbitControls.js';
 import { bandForProbability } from './risk_bands.mjs';
 
-const state={schema:null,example:null,result:null,selected:'CAD',scene:null,camera:null,renderer:null,controls:null,arteries:{},labels:{},raycaster:new THREE.Raycaster(),pointer:new THREE.Vector2()};
+const state={schema:null,example:null,result:null,values:null,selected:'CAD',scene:null,camera:null,renderer:null,controls:null,arteries:{},labels:{},raycaster:new THREE.Raycaster(),pointer:new THREE.Vector2()};
 const $=id=>document.getElementById(id);
 const vesselLabels={LAD:'LAD · anterior descending',LCX:'LCX · circumflex',RCA:'RCA · right coronary'};
 const targetNames={CAD:'Overall CAD',LAD:'LAD',LCX:'LCX',RCA:'RCA'};
@@ -21,7 +21,7 @@ async function init(){
   $('clinical-form').addEventListener('submit',onSubmit);
   $('load-example').addEventListener('click',()=>loadExample(true));
   $('clear-form').addEventListener('click',clearForm);
-  $('explain-target').addEventListener('change',e=>{state.selected=e.target.value;renderExplanation()});
+  $('explain-target').addEventListener('change',e=>selectTarget(e.target.value));
   $('reset-view').addEventListener('click',()=>{if(state.controls){state.controls.reset();state.camera.position.set(0,0,5.3)}});
   if(new URLSearchParams(location.search).get('demo')==='1'){
     await loadExample(false);
@@ -56,14 +56,14 @@ async function loadExample(show=true){
   $('example-note').textContent=state.example.label||'Synthetic demonstration values only.';
   if(show){$('example-note').classList.add('flash');setTimeout(()=>$('example-note').classList.remove('flash'),800)}
 }
-function clearForm(){document.querySelectorAll('#clinical-form input,#clinical-form select').forEach(x=>{x.value='';delete x.dataset.demoExact});$('example-note').textContent='All fields cleared. Blank fields will be imputed by the fitted pipeline.';state.result=null;$('result-content').classList.add('hidden');$('results-empty').classList.remove('hidden');$('analysis-state').innerHTML='<i></i> Awaiting inputs';setArteryProbabilities(null)}
+function clearForm(){document.querySelectorAll('#clinical-form input,#clinical-form select').forEach(x=>{x.value='';delete x.dataset.demoExact});$('example-note').textContent='All fields cleared. Blank fields will be imputed by the fitted pipeline.';state.result=null;state.values=null;$('result-content').classList.add('hidden');$('results-empty').classList.remove('hidden');$('analysis-state').innerHTML='<i></i> Awaiting inputs';setArteryProbabilities(null)}
 async function onSubmit(e){
   e.preventDefault();clearError();const button=$('predict');button.disabled=true;button.innerHTML='<span>Calculating models & explanations…</span><span class="spinner"></span>';$('analysis-state').className='status-badge waiting';$('analysis-state').innerHTML='<i></i> Computing';
   try{
     const values={};for(const f of state.schema.fields){const el=document.querySelector(`[name="${CSS.escape(f.name)}"]`);let v=el?.dataset.demoExact??el?.value??'';values[f.name]=v===''?null:(f.type==='number'||f.type==='coded_select'?Number(v):v)}
-    const res=await fetch('/api/predict',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({values})});
+    const res=await fetch('/api/predict',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({values,include_explanations:false})});
     const payload=await res.json();if(!res.ok)throw new Error(payload.detail||`Request failed (${res.status})`);
-    state.result=payload;state.selected='CAD';renderResults();$('analysis-state').className='status-badge ready';$('analysis-state').innerHTML='<i></i> Analysis complete';
+    state.values=values;state.result=payload;state.selected='CAD';renderResults();$('analysis-state').className='status-badge ready';$('analysis-state').innerHTML='<i></i> Predictions ready';loadExplanation('CAD');
   }catch(err){showError(err.message||String(err));$('analysis-state').className='status-badge';$('analysis-state').innerHTML='<i></i> Could not analyze'}
   finally{button.disabled=false;button.innerHTML='<span>Generate analysis</span><span aria-hidden="true">→</span>'}
 }
@@ -75,16 +75,29 @@ function renderResults(){
   $('explain-target').innerHTML=Object.keys(preds).map(k=>`<option value="${k}">${targetNames[k]}</option>`).join('');$('explain-target').value=state.selected;
   setArteryProbabilities(preds);renderVessels(preds);renderExplanation();
 }
-function selectTarget(t){state.selected=t;$('explain-target').value=t;document.querySelectorAll('.prediction-card').forEach(x=>x.classList.toggle('selected',x.dataset.target===t));document.querySelectorAll('.vessel-item').forEach(x=>x.classList.toggle('active',x.dataset.target===t));renderExplanation()}
+function selectTarget(t){state.selected=t;$('explain-target').value=t;document.querySelectorAll('.prediction-card').forEach(x=>x.classList.toggle('selected',x.dataset.target===t));document.querySelectorAll('.vessel-item').forEach(x=>x.classList.toggle('active',x.dataset.target===t));renderExplanation();loadExplanation(t)}
 function renderVessels(preds){
   $('vessel-list').innerHTML=['LAD','LCX','RCA'].map(k=>{const p=preds[k].probability;return `<button class="vessel-item ${state.selected===k?'active':''}" data-target="${k}"><span class="v-name"><i class="vessel-dot" style="background:${hexColor(riskColor(p))}"></i>${k}</span><div class="v-prob" style="color:${hexColor(riskColor(p))}">${(p*100).toFixed(1)}%</div><div class="v-caption">predicted probability</div></button>`}).join('');
   document.querySelectorAll('.vessel-item').forEach(el=>el.addEventListener('click',()=>selectTarget(el.dataset.target)));
 }
 function renderExplanation(){
-  if(!state.result)return;const key=state.selected,exp=state.result.explanations[key];if(!exp)return;
+  if(!state.result)return;const key=state.selected,exp=state.result.explanations[key];
+  if(!exp){$('baseline-line').textContent=`Loading ${targetNames[key]} explanation…`;$('shap-bars').innerHTML='<div class="loading-explanation">Calculating the selected outcome’s explanation…</div>';return;}
   $('baseline-line').textContent=`${targetNames[key]} estimate ${(exp.prediction_probability*100).toFixed(1)}%  ·  Background baseline ${(exp.baseline_probability*100).toFixed(1)}%  ·  Additivity difference ${(exp.additivity_error*100).toFixed(3)} percentage points`;
   const vals=exp.contributions||[],max=Math.max(...vals.map(x=>Math.abs(x.value)),.0001);
   $('shap-bars').innerHTML=vals.map(x=>{const width=Math.max(2,Math.abs(x.value)/max*47);const feature=state.schema.fields.find(f=>f.name===x.feature);const patientValue=x.input===null?'Blank → imputed':(typeof x.input==='number'?Number(x.input).toLocaleString(undefined,{maximumFractionDigits:2}):String(x.input));const unit=feature?.unit&& !feature.unit.includes('does not specify')?feature.unit:'';return `<div class="shap-row"><span class="shap-label" title="${esc(x.feature)}">${esc(feature?.label||x.feature)}</span><span class="shap-patient-value" title="Input value from this analysis">${esc(patientValue)}${unit?` ${esc(unit)}`:''}</span><div class="shap-track"><i class="shap-zero"></i><i class="shap-fill ${x.value>=0?'pos':'neg'}" style="width:${width}%"></i></div><span class="shap-value">${x.value>=0?'+':''}${(x.value*100).toFixed(2)} pp</span></div>`}).join('');
+}
+async function loadExplanation(target){
+  if(!state.result||state.result.explanations[target]||!state.values)return;
+  try{
+    renderExplanation();
+    const res=await fetch(`/api/explain/${encodeURIComponent(target)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({values:state.values})});
+    const payload=await res.json();if(!res.ok)throw new Error(payload.detail||`Explanation request failed (${res.status})`);
+    state.result.explanations[target]=payload;
+    if(state.selected===target)renderExplanation();
+  }catch(err){
+    if(state.selected===target){$('baseline-line').textContent='Explanation unavailable.';$('shap-bars').innerHTML=`<div class="loading-explanation">${esc(err.message||String(err))}</div>`;}
+  }
 }
 function setArteryProbabilities(preds){
   for(const [key,obj] of Object.entries(state.arteries)){const p=preds?.[key]?.probability;const color=p==null?colors.neutral:riskColor(p);obj.material.color.setHex(color);obj.material.emissive.setHex(color);obj.material.emissiveIntensity=.18;obj.children?.forEach?.(c=>c.material?.color?.setHex(color))}

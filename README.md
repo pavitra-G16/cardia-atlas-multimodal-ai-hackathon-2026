@@ -18,7 +18,7 @@ python3 -m venv .venv
 .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Open <http://127.0.0.1:8000/>. Select **Load demo values** for the synthetic feature-wise median/mode profile, then select **Generate analysis**. Edit values and generate again to compare outputs, or select **Clear all** to reset the form and results. Drag the 3D view to rotate, use wheel/pinch to zoom, and select an artery label, vessel card, or result card to inspect its patient-specific explanation. The visible SHAP chart lists the 10 largest absolute contributions among 54 predictors; the additivity check uses the complete contribution set. The demo is not a study patient or evaluation evidence. Inputs are sent to the configured app API for inference and are not stored by the application. Use synthetic data only; do not submit identifiable or real patient data.
+Open <http://127.0.0.1:8000/>. Select **Load demo values** for the synthetic feature-wise median/mode profile, then select **Generate analysis**. The four prediction cards and 3D vessel colours render first; the currently selected outcome's SHAP explanation then loads separately. Edit values and generate again to compare outputs, or select **Clear all** to reset the form and results. Drag the 3D view to rotate, use wheel/pinch to zoom, and select an artery label, vessel card, or result card to inspect its patient-specific explanation. The visible SHAP chart lists the 10 largest absolute contributions among 54 predictors; the additivity check uses the complete contribution set. The demo is not a study patient or evaluation evidence. Inputs are sent to the configured app API for inference and are not stored by the application. Use synthetic data only; do not submit identifiable or real patient data.
 
 ## Reproduce the data audit and training
 
@@ -72,7 +72,8 @@ The visualization is an anterior-view educational illustration. LAD follows the 
 - `GET /api/schema`
 - `GET /api/performance`
 - `GET /api/example`
-- `POST /api/predict` with `{"values": {"Age": 58, ...}}`
+- `POST /api/predict` with `{"values": {"Age": 58, ...}}`. The default response includes four explanations for API compatibility; send `"include_explanations": false` for immediate four-target scores.
+- `POST /api/explain/{CAD|LAD|LCX|RCA}` with `{"values": {"Age": 58, ...}}` for one on-demand explanation of the selected target.
 
 Fields may be omitted or blank and are imputed. Unknown fields, invalid categories, non-finite values, and numeric values outside the observed source range are rejected with HTTP 422; the prototype blocks extrapolation beyond the small dataset's observed range. Scores are returned for CAD/LAD/LCX/RCA. SHAP uses a fixed 24-row background, six permutation cycles, and the deployed preprocessing/model. One-hot contributions are summed back to source input fields. Output and contributions are in positive-class probability units; the expected baseline plus all contributions equals the model score (verified). Permutation SHAP is approximate with finite permutations; contributions are associations, not causes.
 
@@ -88,7 +89,7 @@ The integrated local API was exercised with the synthetic demo profile, all fiel
 
 ## Build and container
 
-`Dockerfile` packages the API, bundled UI, model pipelines, and data required for example inputs and SHAP. It listens on `PORT` (default 10000), exposes `/api/health` as its health check, and `render.yaml` configures the same Docker web service currently hosted on Render. Render successfully built and started the deployed image. A local Docker build was not run because no Docker engine is installed. The Render Free instance sleeps when idle and has host resource limits; cold starts and prediction/explanation latency can vary.
+`Dockerfile` packages the API, bundled UI, model pipelines, and data required for example inputs and SHAP. It listens on `PORT` (default 10000), exposes `/api/health` as its health check, and `render.yaml` is a Render Blueprint with automatic Git deployment enabled. The browser requests four scores first and loads only the selected SHAP explanation afterwards, so model-output cards are not delayed by the other three explanation calculations. Render Free still sleeps when idle and has host resource limits; a cold start cannot be eliminated by the Blueprint itself.
 
 ```bash
 docker build -t cardia-atlas .

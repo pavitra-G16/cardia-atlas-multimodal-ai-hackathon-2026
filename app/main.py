@@ -36,6 +36,10 @@ async def revalidate_frontend_assets(request, call_next):
 
 class PredictRequest(BaseModel):
     values: dict[str, object]
+    # Kept true by default for API compatibility. The browser opts out so it can
+    # paint the four predictions immediately and request one explanation only
+    # when the user opens it.
+    include_explanations: bool = True
 
 
 
@@ -147,9 +151,19 @@ def predict(request:PredictRequest):
     result={"predictions":{},"explanations":{},"caveats":["Educational decision-support prototype; not a diagnosis.","Predicted probabilities are not measured stenosis percentages or lesion locations.","Associations do not establish causation."]}
     for target,model in MODELS.items():
         p=float(model.predict_proba(row)[:,1][0])
-        exp=shap_for(model,row)
         result['predictions'][target]={"probability":p,"threshold":0.5,"predicted_class":"positive" if p>=0.5 else "negative","model":BUNDLE['model_names'][target]}
-        result['explanations'][target]=exp
+        if request.include_explanations:
+            result['explanations'][target]=shap_for(model,row)
     return result
+
+
+@app.post('/api/explain/{target}')
+def explain(target:str, request:PredictRequest):
+    """Return one on-demand explanation for the exact deployed prediction path."""
+    if ARTIFACT_ERROR: raise HTTPException(503,detail=ARTIFACT_ERROR)
+    if target not in MODELS:
+        raise HTTPException(404,detail=f'Unknown outcome: {target}')
+    row=validate_values(request.values)
+    return shap_for(MODELS[target],row)
 
 app.mount('/',StaticFiles(directory=ROOT/'app/static',html=True),name='static')

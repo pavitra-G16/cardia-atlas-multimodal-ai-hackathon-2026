@@ -43,14 +43,14 @@ class ModelContractTests(unittest.TestCase):
             else:
                 self.assertEqual(result['values'][name],str(self.df[name].mode(dropna=True).iloc[0]))
     def test_explanation_matches_positive_probability_and_top_ten_display_contract(self):
-        from app.main import example, predict, PredictRequest
-        result=predict(PredictRequest(values=example()['values']))
+        from app.main import example, predict, explain, PredictRequest
+        result=predict(PredictRequest(values=example()['values'], include_explanations=False))
         self.assertEqual(set(result['predictions']),{'CAD','LAD','LCX','RCA'})
-        self.assertEqual(set(result['explanations']),{'CAD','LAD','LCX','RCA'})
+        self.assertEqual(result['explanations'],{})
         names=set(self.bundle['features'])
         for target in result['predictions']:
             prediction=result['predictions'][target]['probability']
-            exp=result['explanations'][target]
+            exp=explain(target, PredictRequest(values=example()['values']))
             self.assertEqual(exp['output_scale'],'positive-class predicted probability')
             self.assertAlmostEqual(exp['prediction_probability'],prediction,places=12)
             self.assertLess(exp['additivity_error'],1e-12)
